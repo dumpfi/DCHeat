@@ -1,0 +1,11 @@
+{
+    "id": "{75C7DA4A-1104-EBA7-05E6-BD3130A6E0AA}",
+    "name": "Heizungskachel HTML",
+    "type": 3,
+    "vendor": "Eigenbau",
+    "aliases": ["HeizungVisu"],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": ["{75C7DA4A-1104-EBA7-05E6-BD3130A6E0AA}"],
+    "prefix": "HEAT"
+}
