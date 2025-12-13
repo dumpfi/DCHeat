@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-class PufferspeicherVisu extends IPSModule
+class HeizungskachelHTML extends IPSModule
 {
     public function Create()
     {
