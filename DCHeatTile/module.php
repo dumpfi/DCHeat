@@ -87,7 +87,6 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // Hier beginnt das SVG.
-        // Ich habe die CSS-Counter entfernt und IDs für JS hinzugefügt.
         $html = <<<HTML
         <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; background: transparent;">
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -119,14 +118,13 @@ class HeizungskachelHTML extends IPSModule
 
           <style>
             :root {
-                /* Startwerte, werden gleich per JS überschrieben */
                 --fill-val: 0; 
             }
 
             text { font-family: 'Helvetica Neue', Arial, sans-serif; fill: #2c3e50; }
             
             .tank-outline {
-              fill: none; stroke: #34495e; stroke-width: 4; rx: 20;
+              fill: none; stroke: #34495e; stroke-width: 4; 
               filter: url(#tankShadow);
             }
 
@@ -135,7 +133,6 @@ class HeizungskachelHTML extends IPSModule
             .layer-hot {
               fill: url(#hotWaterFade);
               width: 220px;
-              /* Hier nutzen wir die CSS Variable für die Höhe */
               height: calc(var(--fill-val) * 1%); 
               transition: height 0.8s ease-in-out;
             }
@@ -158,7 +155,6 @@ class HeizungskachelHTML extends IPSModule
                 background: transparent;
             }
 
-            /* Texte */
             .percent-text {
                 font-size: 40px;
                 font-weight: 900;
@@ -180,7 +176,8 @@ class HeizungskachelHTML extends IPSModule
               <rect x="30" y="30" class="layer-cold" />
               <rect x="30" y="30" class="layer-hot" id="hotLayer" />
             </g>
-            <rect x="30" y="30" width="220" height="560" class="tank-outline" pointer-events="none"/>
+            
+            <rect x="30" y="30" width="220" height="560" rx="20" ry="20" class="tank-outline" pointer-events="none"/>
 
             <line x1="10" y1="50" x2="60" y2="50" class="spindle-connector"/>
             <line x1="10" y1="570" x2="60" y2="570" class="spindle-connector"/>
@@ -241,32 +238,21 @@ class HeizungskachelHTML extends IPSModule
         </div>
 
         <script>
-            // Startwerte empfangen (wird beim Laden via PHP injiziert)
             var initialData = $initialData;
-            
-            // Einmalig beim Start ausführen
             updateView(initialData);
 
-            // Diese Funktion wird von Symcon aufgerufen, wenn sich Variablen ändern
             function handleMessage(data) {
-                // data kommt als JSON-String, muss geparst werden
                 var jsonObj = JSON.parse(data);
                 updateView(jsonObj);
             }
 
             function updateView(data) {
                 if (!data) return;
-
-                // 1. Füllstand (CSS Variable für Höhe + Text)
-                // Wir greifen auf das Root Element zu, um die Variable zu setzen
-                // Da wir im ShadowDOM oder IFrame sind, nehmen wir das SVG selbst
                 var svg = document.getElementById("tankSvg");
                 if(data.fill !== undefined) {
                     svg.style.setProperty('--fill-val', data.fill);
                     document.getElementById("val-percent").innerText = parseFloat(data.fill).toFixed(0) + " %";
                 }
-
-                // 2. Temperaturen (Text Updates)
                 if(data.boiler !== undefined) document.getElementById("val-boiler").innerText = parseFloat(data.boiler).toFixed(1) + " °C";
                 if(data.puffer3 !== undefined) document.getElementById("val-puffer3").innerText = parseFloat(data.puffer3).toFixed(1) + " °C";
                 if(data.puffer2 !== undefined) document.getElementById("val-puffer2").innerText = parseFloat(data.puffer2).toFixed(1) + " °C";
