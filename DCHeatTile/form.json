@@ -1,0 +1,45 @@
+{
+    "elements": [
+        {
+            "type": "Label",
+            "caption": "Bitte wähle die entsprechenden Variablen aus deinem System aus."
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Speicher Füllstand",
+            "items": [
+                {
+                    "type": "SelectVariable",
+                    "name": "SourceFill",
+                    "caption": "Füllstand (in %)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Temperatur Sensoren",
+            "items": [
+                {
+                    "type": "SelectVariable",
+                    "name": "SourceBoiler",
+                    "caption": "Boiler Fühler (Ganz oben)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "SourcePuffer3",
+                    "caption": "Puffer Fühler 3 (Mitte Oben)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "SourcePuffer2",
+                    "caption": "Puffer Fühler 2 (Mitte Unten)"
+                },
+                {
+                    "type": "SelectVariable",
+                    "name": "SourcePuffer1",
+                    "caption": "Puffer Fühler 1 (Unten)"
+                }
+            ]
+        }
+    ]
+}
