@@ -11,16 +11,16 @@ class HeizungskachelHTML extends IPSModule
         // ---------------------------------------------------------------------
         // 1. Eigenschaften
         // ---------------------------------------------------------------------
-        $this->RegisterPropertyInteger("SourceFill", 0);
-        $this->RegisterPropertyInteger("SourceBoiler", 0);
-        $this->RegisterPropertyInteger("SourcePuffer3", 0);
-        $this->RegisterPropertyInteger("SourcePuffer2", 0);
-        $this->RegisterPropertyInteger("SourcePuffer1", 0);
+        $this->RegisterPropertyInteger("SourceFill", 0);       
+        $this->RegisterPropertyInteger("SourceBoiler", 0);     
+        $this->RegisterPropertyInteger("SourcePuffer3", 0);    
+        $this->RegisterPropertyInteger("SourcePuffer2", 0);    
+        $this->RegisterPropertyInteger("SourcePuffer1", 0);    
 
-        $this->RegisterPropertyInteger("Boiler_State", 0);
-        $this->RegisterPropertyInteger("Boiler_Temp", 0);
-        $this->RegisterPropertyInteger("Circuit_State", 0);
-        $this->RegisterPropertyInteger("Circuit_FlowTemp", 0);
+        $this->RegisterPropertyInteger("Boiler_State", 0);     
+        $this->RegisterPropertyInteger("Boiler_Temp", 0);      
+        $this->RegisterPropertyInteger("Circuit_State", 0);    
+        $this->RegisterPropertyInteger("Circuit_FlowTemp", 0); 
 
         $this->SetVisualizationType(1);
     }
@@ -60,16 +60,16 @@ class HeizungskachelHTML extends IPSModule
         $getVal = function($propName) {
             $id = $this->ReadPropertyInteger($propName);
             if ($id > 0 && IPS_VariableExists($id)) return GetValue($id);
-            return 0;
+            return 0; 
         };
 
         $data = [
             'fill'    => $getVal("SourceFill"),
             't_boil'  => $getVal("SourceBoiler"),
-            't_p3'    => $getVal("SourcePuffer3"),
+            't_p3'    => $getVal("SourcePuffer3"), 
             't_p2'    => $getVal("SourcePuffer2"),
             't_p1'    => $getVal("SourcePuffer1"),
-            'ov_boil_state' => $getVal("Boiler_State"),
+            'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
             'ov_circ_state' => $getVal("Circuit_State"),
             'ov_circ_temp'  => $getVal("Circuit_FlowTemp"),
@@ -83,7 +83,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT (Original)
+        // SVG TEIL 1: POPUP INHALT (Unverändert)
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT)
+        // SVG TEIL 2: HAUPTÜBERSICHT (Mit weichem Verlauf)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -180,13 +180,14 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
-                </filter>
-                
-                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
+                <linearGradient id="thermalTransition" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#e74c3c"/>
+                    <stop offset="50%" stop-color="#e74c3c"/>
+                    <stop offset="50%" stop-color="#3498db"/>
+                    <stop offset="100%" stop-color="#3498db"/>
+                </linearGradient>
 
-                <clipPath id="overviewTankClip">
+                <clipPath id="tankClipRound">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
             </defs>
@@ -204,22 +205,14 @@ class HeizungskachelHTML extends IPSModule
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 
-                <g clip-path="url(#overviewTankClip)">
+                <g clip-path="url(#tankClipRound)">
                     
-                    <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
+                    <rect x="350" y="100" width="120" height="300" fill="url(#thermalTransition)" />
                     
-                    <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
-                          style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
-
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
-                        <g class="wave-anim" style="opacity: 0.9;">
-                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
-                        </g>
-                    </g>
-
-                </g>
+                </g> 
 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
             </g>
@@ -260,14 +253,6 @@ class HeizungskachelHTML extends IPSModule
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
-
-            @keyframes waveMove {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-120px); } 
-            }
-            .wave-anim {
-                animation: waveMove 3s linear infinite;
-            }
         </style>
 
         <div class="visu-container">
