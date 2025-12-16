@@ -9,17 +9,16 @@ class HeizungskachelHTML extends IPSModule
         parent::Create();
 
         // ---------------------------------------------------------------------
-        // 1. Eigenschaften für den SPEICHER
+        // 1. Eigenschaften (Variablen-Auswahl)
         // ---------------------------------------------------------------------
-        $this->RegisterPropertyInteger("SourceFill", 0);       // Füllstand in %
-        $this->RegisterPropertyInteger("SourceBoiler", 0);     // Temp Oben
-        $this->RegisterPropertyInteger("SourcePuffer3", 0);    // Temp Mitte-Oben
-        $this->RegisterPropertyInteger("SourcePuffer2", 0);    // Temp Mitte-Unten
-        $this->RegisterPropertyInteger("SourcePuffer1", 0);    // Temp Unten
+        // WICHTIG: Prüfe nach dem Update in der Instanz-Konfiguration, 
+        // ob bei "SourceFill" deine Füllstandsvariable ausgewählt ist!
+        $this->RegisterPropertyInteger("SourceFill", 0);       
+        $this->RegisterPropertyInteger("SourceBoiler", 0);     
+        $this->RegisterPropertyInteger("SourcePuffer3", 0);    
+        $this->RegisterPropertyInteger("SourcePuffer2", 0);    
+        $this->RegisterPropertyInteger("SourcePuffer1", 0);    
 
-        // ---------------------------------------------------------------------
-        // 2. Eigenschaften für OFEN & HEIZKREIS
-        // ---------------------------------------------------------------------
         $this->RegisterPropertyInteger("Boiler_State", 0);     
         $this->RegisterPropertyInteger("Boiler_Temp", 0);      
         $this->RegisterPropertyInteger("Circuit_State", 0);    
@@ -69,7 +68,7 @@ class HeizungskachelHTML extends IPSModule
         };
 
         $data = [
-            // WICHTIG: 'fill' ist die zentrale Variable für BEIDE Ansichten
+            // 'fill' ist der Schlüssel für BEIDE Ansichten
             'fill'    => $getVal("SourceFill"),
             
             // Temperaturen Puffer
@@ -93,7 +92,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT (Detailansicht)
+        // SVG TEIL 1: POPUP INHALT
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -118,13 +117,9 @@ class HeizungskachelHTML extends IPSModule
           <style>
             #tankSvg { --fill-val: 0; --t-boiler: 0; --t-puffer3: 0; --t-puffer2: 0; --t-puffer1: 0; }
             text { font-family: "Helvetica Neue", Arial, sans-serif; fill: #2c3e50; }
-            
-            /* CSS Klassen */
             .tank-outline { fill: none; stroke: #34495e; stroke-width: 4; filter: url(#tankShadow); }
-            
             .layer-cold { fill: url(#coldWater); width: 220px; height: 560px; }
             .layer-hot { fill: url(#hotWaterFade); width: 220px; height: calc(var(--fill-val) * 1%); transition: height 0.5s ease; }
-            
             .spindle-coil { fill: none; stroke: rgba(255, 255, 255, 0.6); stroke-width: 8; stroke-linecap: round; pointer-events: none; }
             .spindle-connector { stroke: #7f8c8d; stroke-width: 8; fill: none; }
             .sensor-line { stroke: #2c3e50; stroke-width: 2; stroke-dasharray: 5, 3; }
@@ -145,9 +140,7 @@ class HeizungskachelHTML extends IPSModule
               <rect x="30" y="30" class="layer-cold" />
               <rect x="30" y="30" class="layer-hot" />
             </g>
-            
             <rect x="30" y="30" width="220" height="560" rx="20" ry="20" class="tank-outline" pointer-events="none"/>
-            
             <line x1="10" y1="50" x2="60" y2="50" class="spindle-connector"/>
             <line x1="10" y1="570" x2="60" y2="570" class="spindle-connector"/>
             <path class="spindle-coil" d="M 60 50 Q 220 50, 220 80 Q 220 110, 60 110 Q 60 140, 220 140 Q 220 170, 60 170 Q 60 200, 220 200 Q 220 230, 60 230 Q 60 260, 220 260 Q 220 290, 60 290 Q 60 320, 220 320 Q 220 350, 60 350 Q 60 380, 220 380 Q 220 410, 60 410 Q 60 440, 220 440 Q 220 470, 60 470 Q 60 500, 220 500 Q 220 530, 60 530 Q 60 570, 220 570 L 60 570" />
@@ -181,7 +174,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (KORRIGIERT)
+        // SVG TEIL 2: HAUPTÜBERSICHT
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -215,6 +208,7 @@ class HeizungskachelHTML extends IPSModule
                       style="clip-path: inset(0 0 calc(100% - var(--fill-val) * 1%) 0); transition: clip-path 1s;"/>
                 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
@@ -293,7 +287,8 @@ class HeizungskachelHTML extends IPSModule
 
         <script>
             var initialData = $initialData;
-            updateView(initialData);
+            // Kleiner Timeout hilft manchmal beim Initial-Rendering von SVGs
+            setTimeout(function() { updateView(initialData); }, 50);
 
             function handleMessage(data) {
                 var jsonObj = JSON.parse(data);
@@ -305,18 +300,19 @@ class HeizungskachelHTML extends IPSModule
 
                 // 1. GLOBAL & PUFFER UPDATE
                 if(data.fill !== undefined) {
-                    // Globale Variable (für Übersicht)
+                    // Update global CSS var
                     document.documentElement.style.setProperty('--fill-val', data.fill);
                     
-                    // Text in der Übersicht aktualisieren (Verknüpfung hergestellt)
+                    // Update TEXT in MAIN SVG (Übersicht)
+                    // HIER WAR DAS PROBLEM: Nutzung von textContent ist sicherer für SVG
                     setText('main_buf_fill', parseFloat(data.fill).toFixed(0));
                     
-                    // Variable für Popup (Scope ID)
+                    // Update Popup
                     var tankSvg = document.getElementById('tankSvg');
                     if (tankSvg) tankSvg.style.setProperty('--fill-val', Math.round(data.fill));
                 }
 
-                // Popup Temperatur Werte
+                // Popup Temperaturen
                 var tankSvg = document.getElementById('tankSvg');
                 if (tankSvg) {
                     if(data.t_boil !== undefined) tankSvg.style.setProperty('--t-boiler', Math.round(data.t_boil));
@@ -362,7 +358,15 @@ class HeizungskachelHTML extends IPSModule
             }
 
             function fmt(val) { return parseFloat(val).toFixed(1); }
-            function setText(id, val) { var el = document.getElementById(id); if(el) el.innerText = val; }
+            
+            // KORREKTUR: Nutzung von textContent für SVG Kompatibilität
+            function setText(id, val) { 
+                var el = document.getElementById(id); 
+                if(el) {
+                    el.textContent = val; // Sicherer für SVG <tspan>
+                }
+            }
+            
             function openModal(id) { document.getElementById(id).style.display = 'flex'; }
             function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         </script>
