@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT)
+        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT: MEHR AMPLITUDE, SCHNELLER)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -181,10 +181,10 @@ class HeizungskachelHTML extends IPSModule
                 </linearGradient>
 
                 <filter id="waveBlurSoft" x="-10%" y="-10%" width="120%" height="120%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
                 </filter>
                 
-                <path id="waveRedTopBlock" d="M -200 0 Q -190 8 -180 0 T -160 0 T -140 0 T -120 0 T -100 0 T -80 0 T -60 0 T -40 0 T -20 0 T 0 0 T 20 0 T 40 0 T 60 0 T 80 0 T 100 0 T 120 0 T 140 0 T 160 0 T 180 0 T 200 0 T 220 0 T 240 0 V -400 H -200 Z" />
+                <path id="waveRedTopBlock" d="M -220 0 Q -210 18 -200 0 T -180 0 T -160 0 T -140 0 T -120 0 T -100 0 T -80 0 T -60 0 T -40 0 T -20 0 T 0 0 T 20 0 T 40 0 T 60 0 T 80 0 T 100 0 T 120 0 T 140 0 T 160 0 T 180 0 T 200 0 T 220 0 T 240 0 T 260 0 V -450 H -220 Z" />
 
                 <clipPath id="tankClipRound">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
@@ -260,13 +260,14 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Dynamischere Welle: Schneller (2.5s) */
+            /* Dynamischere Welle: Schneller (1.0s) */
             @keyframes waveSlide {
                 from { transform: translateX(350px); }
-                to { transform: translateX(310px); } /* Verschiebung um eine Periode (40px) */
+                to { transform: translateX(310px); }
             }
+            /* KORREKTUR: Zeit auf 1.0s verkürzt für schnellere Bewegung */
             .wave-fill-anim {
-                animation: waveSlide 2.5s linear infinite;
+                animation: waveSlide 1.0s linear infinite;
             }
         </style>
 
