@@ -9,10 +9,8 @@ class HeizungskachelHTML extends IPSModule
         parent::Create();
 
         // ---------------------------------------------------------------------
-        // 1. Eigenschaften (Variablen-Auswahl)
+        // 1. Eigenschaften
         // ---------------------------------------------------------------------
-        // WICHTIG: Prüfe nach dem Update in der Instanz-Konfiguration, 
-        // ob bei "SourceFill" deine Füllstandsvariable ausgewählt ist!
         $this->RegisterPropertyInteger("SourceFill", 0);       
         $this->RegisterPropertyInteger("SourceBoiler", 0);     
         $this->RegisterPropertyInteger("SourcePuffer3", 0);    
@@ -31,14 +29,12 @@ class HeizungskachelHTML extends IPSModule
     {
         parent::ApplyChanges();
 
-        // Alte Nachrichten löschen
         foreach ($this->GetMessageList() as $senderID => $messages) {
             foreach ($messages as $message) {
                 if ($message == VM_UPDATE) $this->UnregisterMessage($senderID, VM_UPDATE);
             }
         }
 
-        // Variablen registrieren
         $props = [
             "SourceFill", "SourceBoiler", "SourcePuffer3", "SourcePuffer2", "SourcePuffer1",
             "Boiler_State", "Boiler_Temp", "Circuit_State", "Circuit_FlowTemp"
@@ -68,16 +64,11 @@ class HeizungskachelHTML extends IPSModule
         };
 
         $data = [
-            // 'fill' ist der Schlüssel für BEIDE Ansichten
             'fill'    => $getVal("SourceFill"),
-            
-            // Temperaturen Puffer
             't_boil'  => $getVal("SourceBoiler"),
             't_p3'    => $getVal("SourcePuffer3"), 
             't_p2'    => $getVal("SourcePuffer2"),
             't_p1'    => $getVal("SourcePuffer1"),
-            
-            // Übersicht Werte
             'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
             'ov_circ_state' => $getVal("Circuit_State"),
@@ -174,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT
+        // SVG TEIL 2: HAUPTÜBERSICHT (MIT WELLE & BLUR)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -188,6 +179,16 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="80%" stop-color="#e74c3c" stop-opacity="1"/>
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
+
+                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+                </filter>
+                
+                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
+
+                <clipPath id="overviewTankClip">
+                    <rect x="350" y="100" width="120" height="300" rx="10" />
+                </clipPath>
             </defs>
 
             <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
@@ -202,15 +203,24 @@ class HeizungskachelHTML extends IPSModule
             </g>
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
-                <rect x="350" y="100" width="120" height="300" rx="10" fill="url(#mainBlue)" stroke="#7f8c8d" stroke-width="3"/>
                 
-                <rect x="350" y="100" width="120" height="300" rx="10" fill="url(#mainRed)" 
-                      style="clip-path: inset(0 0 calc(100% - var(--fill-val) * 1%) 0); transition: clip-path 1s;"/>
-                
-                <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                <g clip-path="url(#overviewTankClip)">
+                    
+                    <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
+                    
+                    <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
+                          style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
+
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
+                        
+                        <g class="wave-anim" style="opacity: 0.8;">
+                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
+                        </g>
+                    </g>
+
+                </g> <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
-                
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
             </g>
 
@@ -247,9 +257,19 @@ class HeizungskachelHTML extends IPSModule
             }
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
 
+            /* Animationen */
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
+
+            /* NEU: Welle Animation */
+            @keyframes waveMove {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-120px); } /* Verschiebt um eine Wellenlänge */
+            }
+            .wave-anim {
+                animation: waveMove 3s linear infinite;
+            }
         </style>
 
         <div class="visu-container">
@@ -287,7 +307,6 @@ class HeizungskachelHTML extends IPSModule
 
         <script>
             var initialData = $initialData;
-            // Kleiner Timeout hilft manchmal beim Initial-Rendering von SVGs
             setTimeout(function() { updateView(initialData); }, 50);
 
             function handleMessage(data) {
@@ -298,13 +317,11 @@ class HeizungskachelHTML extends IPSModule
             function updateView(data) {
                 if (!data) return;
 
-                // 1. GLOBAL & PUFFER UPDATE
                 if(data.fill !== undefined) {
-                    // Update global CSS var
+                    // Update global CSS var (für Welle und Höhe)
                     document.documentElement.style.setProperty('--fill-val', data.fill);
                     
-                    // Update TEXT in MAIN SVG (Übersicht)
-                    // HIER WAR DAS PROBLEM: Nutzung von textContent ist sicherer für SVG
+                    // Update TEXT (Übersicht)
                     setText('main_buf_fill', parseFloat(data.fill).toFixed(0));
                     
                     // Update Popup
@@ -312,7 +329,6 @@ class HeizungskachelHTML extends IPSModule
                     if (tankSvg) tankSvg.style.setProperty('--fill-val', Math.round(data.fill));
                 }
 
-                // Popup Temperaturen
                 var tankSvg = document.getElementById('tankSvg');
                 if (tankSvg) {
                     if(data.t_boil !== undefined) tankSvg.style.setProperty('--t-boiler', Math.round(data.t_boil));
@@ -321,7 +337,6 @@ class HeizungskachelHTML extends IPSModule
                     if(data.t_p1 !== undefined)   tankSvg.style.setProperty('--t-puffer1', Math.round(data.t_p1));
                 }
 
-                // 2. OFEN & HEIZKREIS
                 if(data.ov_boil_temp !== undefined) {
                     setText('main_boil_temp', fmt(data.ov_boil_temp));
                     setText('detail_boil_temp', fmt(data.ov_boil_temp) + " °C");
@@ -358,15 +373,7 @@ class HeizungskachelHTML extends IPSModule
             }
 
             function fmt(val) { return parseFloat(val).toFixed(1); }
-            
-            // KORREKTUR: Nutzung von textContent für SVG Kompatibilität
-            function setText(id, val) { 
-                var el = document.getElementById(id); 
-                if(el) {
-                    el.textContent = val; // Sicherer für SVG <tspan>
-                }
-            }
-            
+            function setText(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
             function openModal(id) { document.getElementById(id).style.display = 'flex'; }
             function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         </script>
