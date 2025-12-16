@@ -153,7 +153,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (MASKIERUNG + BLUR + BREITER PFAD)
+        // SVG TEIL 2: HAUPTÜBERSICHT (MASKIERUNG + STÄRKERER BLUR)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -173,7 +173,7 @@ class HeizungskachelHTML extends IPSModule
                 </clipPath>
 
                 <filter id="maskBlur" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur" />
                 </filter>
 
                 <mask id="hotWaterMask" maskUnits="userSpaceOnUse" filter="url(#maskBlur)">
@@ -239,13 +239,13 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* KORREKTUR: Animation angepasst an den breiteren Pfad */
+            /* Mask Animation */
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
-                to { transform: translateX(-240px); } /* Bewegt sich um 4 Wellenperioden (4 * 60px) */
+                to { transform: translateX(-240px); } 
             }
             .wave-anim-mask {
-                animation: waveSlideMask 6s linear infinite; /* Langsam und stetig */
+                animation: waveSlideMask 6s linear infinite;
             }
         </style>
         <div class="visu-container">
