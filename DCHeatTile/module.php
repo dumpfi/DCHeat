@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (MIT WELLE & BLUR)
+        // SVG TEIL 2: HAUPTÜBERSICHT (MIT KORREKTER WELLE & BLUR)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -180,11 +180,11 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="6" />
+                <filter id="waveBlur" x="-50%" y="-50%" width="200%" height="200%">
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
                 </filter>
                 
-                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
+                <path id="wavePathStroke" d="M 0 5 Q 30 15 60 5 T 120 5 T 180 5 T 240 5" fill="none" stroke-linecap="round" />
 
                 <clipPath id="overviewTankClip">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
@@ -205,20 +205,19 @@ class HeizungskachelHTML extends IPSModule
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 
                 <g clip-path="url(#overviewTankClip)">
-                    
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
                     
-                    <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
-                          style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
-
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
-                        
-                        <g class="wave-anim" style="opacity: 0.8;">
-                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
+                        <g class="wave-anim" style="opacity: 0.9;">
+                             <use href="#wavePathStroke" stroke="#e74c3c" stroke-width="12" filter="url(#waveBlur)" x="340" />
                         </g>
                     </g>
 
-                </g> <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" 
+                          style="clip-path: inset(0 0 calc(100% - var(--fill-val) * 1%) 0); transition: clip-path 1s ease-in-out;"/>
+                </g>
+
+                <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
@@ -262,13 +261,13 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* NEU: Welle Animation */
+            /* Welle Animation */
             @keyframes waveMove {
                 0% { transform: translateX(0); }
-                100% { transform: translateX(-120px); } /* Verschiebt um eine Wellenlänge */
+                100% { transform: translateX(-120px); } 
             }
             .wave-anim {
-                animation: waveMove 3s linear infinite;
+                animation: waveMove 4s linear infinite;
             }
         </style>
 
@@ -318,13 +317,13 @@ class HeizungskachelHTML extends IPSModule
                 if (!data) return;
 
                 if(data.fill !== undefined) {
-                    // Update global CSS var (für Welle und Höhe)
+                    // Global CSS var update
                     document.documentElement.style.setProperty('--fill-val', data.fill);
                     
-                    // Update TEXT (Übersicht)
+                    // Text Update Übersicht
                     setText('main_buf_fill', parseFloat(data.fill).toFixed(0));
                     
-                    // Update Popup
+                    // Popup Var update
                     var tankSvg = document.getElementById('tankSvg');
                     if (tankSvg) tankSvg.style.setProperty('--fill-val', Math.round(data.fill));
                 }
