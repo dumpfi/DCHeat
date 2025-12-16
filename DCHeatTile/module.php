@@ -83,7 +83,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT (Unverändert)
+        // SVG TEIL 1: POPUP INHALT (Original)
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT: MEHR AMPLITUDE, SCHNELLER)
+        // SVG TEIL 2: HAUPTÜBERSICHT (ZURÜCK ZUR "ALTEN" VERSION MIT LINIE)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -180,13 +180,13 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <filter id="waveBlurSoft" x="-10%" y="-10%" width="120%" height="120%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
                 </filter>
                 
-                <path id="waveRedTopBlock" d="M -220 0 Q -210 18 -200 0 T -180 0 T -160 0 T -140 0 T -120 0 T -100 0 T -80 0 T -60 0 T -40 0 T -20 0 T 0 0 T 20 0 T 40 0 T 60 0 T 80 0 T 100 0 T 120 0 T 140 0 T 160 0 T 180 0 T 200 0 T 220 0 T 240 0 T 260 0 V -450 H -220 Z" />
+                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
 
-                <clipPath id="tankClipRound">
+                <clipPath id="overviewTankClip">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
             </defs>
@@ -204,21 +204,22 @@ class HeizungskachelHTML extends IPSModule
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 
-                <g clip-path="url(#tankClipRound)">
+                <g clip-path="url(#overviewTankClip)">
                     
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
                     
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
-                        
-                        <g class="wave-fill-anim" style="transform: translateX(350px);">
-                             <use href="#waveRedTopBlock" fill="url(#mainRed)" filter="url(#waveBlurSoft)" />
+                    <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
+                          style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
+
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
+                        <g class="wave-anim" style="opacity: 0.9;">
+                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
                         </g>
                     </g>
 
-                </g> 
+                </g>
 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
-                
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
             </g>
@@ -260,14 +261,12 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Dynamischere Welle: Schneller (1.0s) */
-            @keyframes waveSlide {
-                from { transform: translateX(350px); }
-                to { transform: translateX(310px); }
+            @keyframes waveMove {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-120px); } 
             }
-            /* KORREKTUR: Zeit auf 1.0s verkürzt für schnellere Bewegung */
-            .wave-fill-anim {
-                animation: waveSlide 1.0s linear infinite;
+            .wave-anim {
+                animation: waveMove 3s linear infinite;
             }
         </style>
 
