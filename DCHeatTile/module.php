@@ -74,7 +74,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT
+        // SVG TEIL 1: POPUP INHALT (Unverändert)
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -153,7 +153,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (FIXED MASKING)
+        // SVG TEIL 2: HAUPTÜBERSICHT (MASKIERUNG + BLUR + BREITER PFAD)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -172,13 +172,15 @@ class HeizungskachelHTML extends IPSModule
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
 
-                <mask id="hotWaterMask" maskUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="800" height="500" fill="black" />
+                <filter id="maskBlur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+                </filter>
 
+                <mask id="hotWaterMask" maskUnits="userSpaceOnUse" filter="url(#maskBlur)">
+                    <rect x="0" y="0" width="800" height="500" fill="black" />
                     <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
-                        
                         <g class="wave-anim-mask">
-                            <path d="M 300 0 Q 330 5 360 0 T 420 0 T 480 0 T 540 0 V -400 H 300 Z" fill="white" />
+                            <path d="M -400 0 Q -370 5 -340 0 T -280 0 T -220 0 T -160 0 T -100 0 T -40 0 T 20 0 T 80 0 T 140 0 T 200 0 T 260 0 T 320 0 T 380 0 T 440 0 T 500 0 T 560 0 T 620 0 T 680 0 T 740 0 T 800 0 V -400 H -400 Z" fill="white" />
                         </g>
                     </g>
                 </mask>
@@ -196,13 +198,10 @@ class HeizungskachelHTML extends IPSModule
             </g>
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
-                
                 <g clip-path="url(#tankClipRound)">
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
-                    
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" mask="url(#hotWaterMask)" />
                 </g> 
-
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
@@ -223,7 +222,6 @@ class HeizungskachelHTML extends IPSModule
             .visu-container { position: relative; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; background: #ecf0f1; }
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
-            
             .modal-overlay {
                 display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
                 background: rgba(0,0,0,0.6); z-index: 100;
@@ -237,31 +235,27 @@ class HeizungskachelHTML extends IPSModule
                 position: absolute; top: 5px; right: 10px; font-size: 30px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 200;
             }
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
-
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Mask Animation: Langsam (5s) und nur horizontal */
+            /* KORREKTUR: Animation angepasst an den breiteren Pfad */
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
-                to { transform: translateX(-120px); } 
+                to { transform: translateX(-240px); } /* Bewegt sich um 4 Wellenperioden (4 * 60px) */
             }
             .wave-anim-mask {
-                animation: waveSlideMask 5s linear infinite;
+                animation: waveSlideMask 6s linear infinite; /* Langsam und stetig */
             }
         </style>
-
         <div class="visu-container">
             $mainOverview
-
             <div id="modal_buffer" class="modal-overlay">
                 <div class="modal-content">
                     <div class="close-btn" onclick="closeModal('modal_buffer')">&times;</div>
                     <div class="modal-body">$popupBufferContent</div>
                 </div>
             </div>
-
             <div id="modal_boiler" class="modal-overlay">
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;">
                     <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
@@ -272,7 +266,6 @@ class HeizungskachelHTML extends IPSModule
                     </div>
                 </div>
             </div>
-
             <div id="modal_circuit" class="modal-overlay">
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;">
                     <div class="close-btn" onclick="closeModal('modal_circuit')">&times;</div>
@@ -284,26 +277,21 @@ class HeizungskachelHTML extends IPSModule
                 </div>
             </div>
         </div>
-
         <script>
             var initialData = $initialData;
             setTimeout(function() { updateView(initialData); }, 50);
-
             function handleMessage(data) {
                 var jsonObj = JSON.parse(data);
                 updateView(jsonObj);
             }
-
             function updateView(data) {
                 if (!data) return;
-
                 if(data.fill !== undefined) {
                     document.documentElement.style.setProperty('--fill-val', data.fill);
                     setText('main_buf_fill', parseFloat(data.fill).toFixed(0));
                     var tankSvg = document.getElementById('tankSvg');
                     if (tankSvg) tankSvg.style.setProperty('--fill-val', Math.round(data.fill));
                 }
-
                 var tankSvg = document.getElementById('tankSvg');
                 if (tankSvg) {
                     if(data.t_boil !== undefined) tankSvg.style.setProperty('--t-boiler', Math.round(data.t_boil));
@@ -311,7 +299,6 @@ class HeizungskachelHTML extends IPSModule
                     if(data.t_p2 !== undefined)   tankSvg.style.setProperty('--t-puffer2', Math.round(data.t_p2));
                     if(data.t_p1 !== undefined)   tankSvg.style.setProperty('--t-puffer1', Math.round(data.t_p1));
                 }
-
                 if(data.ov_boil_temp !== undefined) {
                     setText('main_boil_temp', fmt(data.ov_boil_temp));
                     setText('detail_boil_temp', fmt(data.ov_boil_temp) + " °C");
@@ -328,7 +315,6 @@ class HeizungskachelHTML extends IPSModule
                         if(detState) { detState.innerText = "STANDBY"; detState.style.color = "#7f8c8d"; }
                     }
                 }
-
                 if(data.ov_circ_temp !== undefined) {
                     setText('main_circ_temp', fmt(data.ov_circ_temp));
                     setText('detail_circ_temp', fmt(data.ov_circ_temp) + " °C");
@@ -346,7 +332,6 @@ class HeizungskachelHTML extends IPSModule
                     }
                 }
             }
-
             function fmt(val) { return parseFloat(val).toFixed(1); }
             function setText(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
             function openModal(id) { document.getElementById(id).style.display = 'flex'; }
