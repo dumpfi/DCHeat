@@ -165,9 +165,8 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (KOMPLETT NEU)
+        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT)
         // -----------------------------------------------------------
-        // Hier wird nun ein gefüllter, wellenförmiger Block verwendet statt einer Linie.
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
             <defs>
@@ -185,7 +184,7 @@ class HeizungskachelHTML extends IPSModule
                    <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
                 </filter>
                 
-                <path id="waveFillPath" d="M -120 0 Q -90 12 -60 0 T 0 0 T 60 0 T 120 0 T 180 0 T 240 0 V 350 H -120 Z" />
+                <path id="waveRedTopBlock" d="M -200 0 Q -190 8 -180 0 T -160 0 T -140 0 T -120 0 T -100 0 T -80 0 T -60 0 T -40 0 T -20 0 T 0 0 T 20 0 T 40 0 T 60 0 T 80 0 T 100 0 T 120 0 T 140 0 T 160 0 T 180 0 T 200 0 T 220 0 T 240 0 V -400 H -200 Z" />
 
                 <clipPath id="tankClipRound">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
@@ -209,14 +208,16 @@ class HeizungskachelHTML extends IPSModule
                     
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
                     
-                    <g style="transform: translateY(calc(400px - (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
                         
                         <g class="wave-fill-anim" style="transform: translateX(350px);">
-                             <use href="#waveFillPath" fill="url(#mainRed)" filter="url(#waveBlurSoft)" />
+                             <use href="#waveRedTopBlock" fill="url(#mainRed)" filter="url(#waveBlurSoft)" />
                         </g>
                     </g>
 
-                </g> <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                </g> 
+
+                <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
@@ -255,18 +256,17 @@ class HeizungskachelHTML extends IPSModule
             }
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
 
-            /* Animationen */
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* NEU: Animation für den gefüllten Wellenblock */
-            @keyframes wave Slide {
+            /* Dynamischere Welle: Schneller (2.5s) */
+            @keyframes waveSlide {
                 from { transform: translateX(350px); }
-                to { transform: translateX(230px); } /* Verschiebung um eine Wellenlänge (120px) nach links */
+                to { transform: translateX(310px); } /* Verschiebung um eine Periode (40px) */
             }
             .wave-fill-anim {
-                animation: waveSlide 4s linear infinite;
+                animation: waveSlide 2.5s linear infinite;
             }
         </style>
 
