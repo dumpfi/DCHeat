@@ -83,7 +83,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT
+        // SVG TEIL 1: POPUP INHALT (Unverändert)
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -165,8 +165,9 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (MIT KORREKTER WELLE & BLUR)
+        // SVG TEIL 2: HAUPTÜBERSICHT (KOMPLETT NEU)
         // -----------------------------------------------------------
+        // Hier wird nun ein gefüllter, wellenförmiger Block verwendet statt einer Linie.
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
             <defs>
@@ -180,13 +181,13 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <filter id="waveBlur" x="-50%" y="-50%" width="200%" height="200%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                <filter id="waveBlurSoft" x="-10%" y="-10%" width="120%" height="120%">
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
                 </filter>
                 
-                <path id="wavePathStroke" d="M 0 5 Q 30 15 60 5 T 120 5 T 180 5 T 240 5" fill="none" stroke-linecap="round" />
+                <path id="waveFillPath" d="M -120 0 Q -90 12 -60 0 T 0 0 T 60 0 T 120 0 T 180 0 T 240 0 V 350 H -120 Z" />
 
-                <clipPath id="overviewTankClip">
+                <clipPath id="tankClipRound">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
             </defs>
@@ -204,20 +205,18 @@ class HeizungskachelHTML extends IPSModule
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 
-                <g clip-path="url(#overviewTankClip)">
+                <g clip-path="url(#tankClipRound)">
+                    
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
                     
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
-                        <g class="wave-anim" style="opacity: 0.9;">
-                             <use href="#wavePathStroke" stroke="#e74c3c" stroke-width="12" filter="url(#waveBlur)" x="340" />
+                    <g style="transform: translateY(calc(400px - (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
+                        
+                        <g class="wave-fill-anim" style="transform: translateX(350px);">
+                             <use href="#waveFillPath" fill="url(#mainRed)" filter="url(#waveBlurSoft)" />
                         </g>
                     </g>
 
-                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" 
-                          style="clip-path: inset(0 0 calc(100% - var(--fill-val) * 1%) 0); transition: clip-path 1s ease-in-out;"/>
-                </g>
-
-                <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
+                </g> <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
                 <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
@@ -261,13 +260,13 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Welle Animation */
-            @keyframes waveMove {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-120px); } 
+            /* NEU: Animation für den gefüllten Wellenblock */
+            @keyframes wave Slide {
+                from { transform: translateX(350px); }
+                to { transform: translateX(230px); } /* Verschiebung um eine Wellenlänge (120px) nach links */
             }
-            .wave-anim {
-                animation: waveMove 4s linear infinite;
+            .wave-fill-anim {
+                animation: waveSlide 4s linear infinite;
             }
         </style>
 
@@ -317,13 +316,8 @@ class HeizungskachelHTML extends IPSModule
                 if (!data) return;
 
                 if(data.fill !== undefined) {
-                    // Global CSS var update
                     document.documentElement.style.setProperty('--fill-val', data.fill);
-                    
-                    // Text Update Übersicht
                     setText('main_buf_fill', parseFloat(data.fill).toFixed(0));
-                    
-                    // Popup Var update
                     var tankSvg = document.getElementById('tankSvg');
                     if (tankSvg) tankSvg.style.setProperty('--fill-val', Math.round(data.fill));
                 }
