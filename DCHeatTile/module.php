@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 class HeizungskachelHTML extends IPSModule
 {
-    // ... (Create und ApplyChanges Methoden bleiben unverändert) ...
     public function Create()
     {
         parent::Create();
 
+        // ---------------------------------------------------------------------
+        // 1. Eigenschaften
+        // ---------------------------------------------------------------------
         $this->RegisterPropertyInteger("SourceFill", 0);       
         $this->RegisterPropertyInteger("SourceBoiler", 0);     
         $this->RegisterPropertyInteger("SourcePuffer3", 0);    
@@ -163,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (NEU: Mit Maskierung für klaren Übergang)
+        // SVG TEIL 2: HAUPTÜBERSICHT (MASKIERUNG - FINAL)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -182,12 +184,13 @@ class HeizungskachelHTML extends IPSModule
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
 
-                <mask id="waveMask">
-                    <rect x="0" y="0" width="800" height="500" fill="white" />
+                <mask id="hotWaterMask">
+                    <rect x="0" y="0" width="800" height="500" fill="black" />
 
                     <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px))); transition: transform 1s ease-in-out;">
-                        <g class="wave-anim-horizontal">
-                            <path d="M -240 0 Q -210 5 -180 0 T -120 0 T -60 0 T 0 0 T 60 0 T 120 0 T 180 0 T 240 0 V 500 H -240 Z" fill="black" />
+                        
+                        <g class="wave-anim-mask">
+                            <path d="M -50 0 Q 0 3 50 0 T 150 0 T 250 0 T 350 0 V -400 H -50 Z" fill="white" />
                         </g>
                     </g>
                 </mask>
@@ -210,7 +213,7 @@ class HeizungskachelHTML extends IPSModule
                     
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
                     
-                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" mask="url(#waveMask)" />
+                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" mask="url(#hotWaterMask)" />
 
                 </g> 
 
@@ -257,13 +260,14 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Animation für die Maske (Wellenbewegung) */
+            /* Animation für die Maske (Langsame Wellenbewegung) */
+            /* 5s Dauer = sehr ruhig */
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
-                to { transform: translateX(-120px); } /* Eine Wellenlänge nach links */
+                to { transform: translateX(-200px); } 
             }
-            .wave-anim-horizontal {
-                animation: waveSlideMask 4s linear infinite; /* Langsame, stetige Bewegung */
+            .wave-anim-mask {
+                animation: waveSlideMask 5s linear infinite;
             }
         </style>
 
