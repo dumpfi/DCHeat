@@ -2,19 +2,30 @@
 
 declare(strict_types=1);
 
-class HeizungSystemOverview extends IPSModule
+// WICHTIG: Der Klassenname muss exakt so heißen, wie er in deiner module.json definiert ist 
+// oder wie er vorher hieß. Ich habe ihn hier auf dein Original zurückgesetzt.
+class HeizungskachelHTML extends IPSModule
 {
     public function Create()
     {
         parent::Create();
 
         // ---------------------------------------------------------------------
-        // 1. Eigenschaften für den SPEICHER (aus deinem alten Modul übernommen)
+        // 1. Eigenschaften für den SPEICHER 
         // ---------------------------------------------------------------------
-        $this->RegisterPropertyInteger("Buffer_FillLevel", 0); // Füllstand %
-        $this->RegisterPropertyInteger("Buffer_TempTop", 0);   // Oben
-        $this->RegisterPropertyInteger("Buffer_TempMid", 0);   // Mitte
-        $this->RegisterPropertyInteger("Buffer_TempBot", 0);   // Unten
+        $this->RegisterPropertyInteger("SourceFill", 0);       // (War vorher SourceFill) -> Mapping auf Buffer_FillLevel
+        $this->RegisterPropertyInteger("SourceBoiler", 0);     // Mapping Buffer_TempTop
+        $this->RegisterPropertyInteger("SourcePuffer3", 0);    // Mapping Buffer_TempMid
+        $this->RegisterPropertyInteger("SourcePuffer2", 0);    // Mapping Buffer_TempBot
+        
+        // Alte Properties behalten wir, damit deine Einstellungen nicht verloren gehen,
+        // oder wir mappen sie neu. Um Fehler zu vermeiden, registriere ich hier 
+        // die neuen Namen, du musst sie in der Instanz dann neu auswählen.
+        
+        $this->RegisterPropertyInteger("Buffer_FillLevel", 0); 
+        $this->RegisterPropertyInteger("Buffer_TempTop", 0);   
+        $this->RegisterPropertyInteger("Buffer_TempMid", 0);   
+        $this->RegisterPropertyInteger("Buffer_TempBot", 0);   
 
         // ---------------------------------------------------------------------
         // 2. Eigenschaften für den OFEN (Kessel)
@@ -36,7 +47,7 @@ class HeizungSystemOverview extends IPSModule
     {
         parent::ApplyChanges();
 
-        // Alte Messages löschen
+        // Alte Nachrichten löschen
         foreach ($this->GetMessageList() as $senderID => $messages) {
             foreach ($messages as $message) {
                 if ($message == VM_UPDATE) $this->UnregisterMessage($senderID, VM_UPDATE);
@@ -44,6 +55,8 @@ class HeizungSystemOverview extends IPSModule
         }
 
         // Alle konfigurierten Variablen überwachen
+        // HINWEIS: Prüfe, ob du die alten "Source..." oder die neuen "Buffer..." nutzen willst.
+        // Ich nutze hier im Array die NEUEN Namen. Du musst diese in der Instanz konfigurieren.
         $props = [
             "Buffer_FillLevel", "Buffer_TempTop", "Buffer_TempMid", "Buffer_TempBot",
             "Boiler_State", "Boiler_Temp",
@@ -67,21 +80,28 @@ class HeizungSystemOverview extends IPSModule
 
     private function GetAllValuesAsJSON()
     {
-        $getVal = function($propName) {
+        // Hilfsfunktion: Versucht erst den neuen Property-Namen, wenn 0, dann Fallback auf alten Namen (für Speicher)
+        $getVal = function($propName, $fallbackOldName = "") {
             $id = $this->ReadPropertyInteger($propName);
+            
+            // Fallback Logic für deine alten Variablen, damit du nicht alles neu einstellen musst
+            if ($id == 0 && $fallbackOldName != "") {
+                $id = $this->ReadPropertyInteger($fallbackOldName);
+            }
+
             if ($id > 0 && IPS_VariableExists($id)) return GetValue($id);
             return 0; // Standardwert
         };
 
         $data = [
-            // Speicher Werte
-            'buf_fill' => $getVal("Buffer_FillLevel"),
-            'buf_t1'   => $getVal("Buffer_TempTop"),
-            'buf_t2'   => $getVal("Buffer_TempMid"),
-            'buf_t3'   => $getVal("Buffer_TempBot"),
+            // Speicher Werte (Mit Fallback auf deine alten Variablennamen "Source...")
+            'buf_fill' => $getVal("Buffer_FillLevel", "SourceFill"),
+            'buf_t1'   => $getVal("Buffer_TempTop", "SourceBoiler"),
+            'buf_t2'   => $getVal("Buffer_TempMid", "SourcePuffer3"), 
+            'buf_t3'   => $getVal("Buffer_TempBot", "SourcePuffer2"),
             
             // Ofen Werte
-            'boil_state' => $getVal("Boiler_State"), // true/false oder 0/1
+            'boil_state' => $getVal("Boiler_State"), 
             'boil_temp'  => $getVal("Boiler_Temp"),
 
             // Heizkreis Werte
@@ -95,10 +115,10 @@ class HeizungSystemOverview extends IPSModule
     public function GetVisualizationTile()
     {
         $initialData = $this->GetAllValuesAsJSON();
-
-        // -----------------------------------------------------------
-        // SVG TEIL 1: Das Popup für den SPEICHER (Dein alter Code)
-        // -----------------------------------------------------------
+        
+        // --- Hier beginnt exakt der gleiche SVG Code wie im vorherigen Post ---
+        // Ich kürze den SVG Inhalt hier nicht ab, damit du Copy&Paste machen kannst.
+        
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" id="tankSvg">
              <defs>
@@ -112,26 +132,26 @@ class HeizungSystemOverview extends IPSModule
                </linearGradient>
                <clipPath id="tankShape"><rect x="30" y="30" width="220" height="560" rx="20" ry="20" /></clipPath>
              </defs>
-             <g transform="translate(80, 20)"> <g clip-path="url(#tankShape)">
+             <g transform="translate(80, 20)"> 
+                <g clip-path="url(#tankShape)">
                   <rect x="30" y="30" width="220" height="560" fill="url(#coldWater)" />
                   <rect x="30" y="30" width="220" height="560" fill="url(#hotWaterFade)" class="layer-hot" id="hotLayer" style="height: calc(var(--fill-val) * 1%); transition: height 0.8s ease;" />
                 </g>
                 <rect x="30" y="30" width="220" height="560" rx="20" ry="20" fill="none" stroke="#34495e" stroke-width="4"/>
-                
                 <text x="260" y="80" font-size="20" font-weight="bold" fill="#333">Oben: <tspan id="txt_buf_t1">--</tspan> °C</text>
                 <text x="260" y="310" font-size="20" font-weight="bold" fill="#333">Mitte: <tspan id="txt_buf_t2">--</tspan> °C</text>
                 <text x="260" y="550" font-size="20" font-weight="bold" fill="#333">Unten: <tspan id="txt_buf_t3">--</tspan> °C</text>
-                
                 <text x="140" y="300" text-anchor="middle" font-size="40" fill="white" font-weight="bold" style="text-shadow: 1px 1px 2px black;"><tspan id="txt_buf_fill">--</tspan>%</text>
              </g>
         </svg>';
 
-        // -----------------------------------------------------------
-        // SVG TEIL 2: Die NEUE ÜBERSICHT (Schematisch)
-        // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
-            <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> <path d="M 470 200 L 600 200" stroke="#e74c3c" stroke-width="8" /> <path d="M 470 300 L 600 300" stroke="#3498db" stroke-width="8" /> <g class="clickable" onclick="openModal(\'modal_boiler\')">
+            <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
+            <path d="M 470 200 L 600 200" stroke="#e74c3c" stroke-width="8" /> 
+            <path d="M 470 300 L 600 300" stroke="#3498db" stroke-width="8" /> 
+
+            <g class="clickable" onclick="openModal(\'modal_boiler\')">
                 <rect x="50" y="150" width="170" height="200" rx="5" fill="#d35400" stroke="#a04000" stroke-width="3"/>
                 <text x="135" y="190" text-anchor="middle" fill="white" font-weight="bold" font-size="18">OFEN</text>
                 <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f1c40f" id="flame_icon" style="opacity: 0.2"/>
@@ -154,9 +174,6 @@ class HeizungSystemOverview extends IPSModule
             </g>
         </svg>';
 
-        // -----------------------------------------------------------
-        // ZUSAMMENBAU HTML
-        // -----------------------------------------------------------
         $html = <<<HTML
         <style>
             :root { --fill-val: 0; }
@@ -164,29 +181,20 @@ class HeizungSystemOverview extends IPSModule
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
             
-            /* Modal Styles */
             .modal-overlay {
-                display: none;
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.6);
-                z-index: 100;
-                justify-content: center; align-items: center;
-                backdrop-filter: blur(3px);
+                display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.6); z-index: 100;
+                justify-content: center; align-items: center; backdrop-filter: blur(3px);
             }
             .modal-content {
-                background: white; width: 90%; height: 90%;
-                border-radius: 10px; position: relative;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                display: flex; flex-direction: column;
+                background: white; width: 90%; height: 90%; border-radius: 10px; position: relative;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column;
             }
             .close-btn {
-                position: absolute; top: 10px; right: 15px;
-                font-size: 30px; font-weight: bold; color: #e74c3c;
-                cursor: pointer; z-index: 101;
+                position: absolute; top: 10px; right: 15px; font-size: 30px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 101;
             }
             .modal-body { flex: 1; padding: 10px; overflow: hidden; }
 
-            /* Animationen */
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
@@ -198,14 +206,13 @@ class HeizungSystemOverview extends IPSModule
             <div id="modal_buffer" class="modal-overlay">
                 <div class="modal-content">
                     <div class="close-btn" onclick="closeModal('modal_buffer')">&times;</div>
-                    <div class="modal-body">
-                        $popupBufferContent
-                    </div>
+                    <div class="modal-body">$popupBufferContent</div>
                 </div>
             </div>
 
             <div id="modal_boiler" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px; max-height: 300px;"> <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
+                <div class="modal-content" style="max-width: 400px; max-height: 300px;">
+                    <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
                     <div class="modal-body" style="text-align:center; padding-top:40px;">
                         <h2>Kessel Status</h2>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
@@ -224,15 +231,12 @@ class HeizungSystemOverview extends IPSModule
                     </div>
                 </div>
             </div>
-
         </div>
 
         <script>
-            // Initiale Daten laden
             var initialData = $initialData;
             updateView(initialData);
 
-            // Symcon Message Handler
             function handleMessage(data) {
                 var jsonObj = JSON.parse(data);
                 updateView(jsonObj);
@@ -240,21 +244,18 @@ class HeizungSystemOverview extends IPSModule
 
             function updateView(data) {
                 if (!data) return;
-
-                // 1. PUFFER UPDATE (Übersicht + Detail)
+                
+                // BUFFER
                 if(data.buf_fill !== undefined) {
-                    // Update CSS Variable für Animation
                     document.documentElement.style.setProperty('--fill-val', data.buf_fill);
-                    // Update Detail Text
                     setText('txt_buf_fill', parseFloat(data.buf_fill).toFixed(0));
-                    // Update Übersicht Text
                     setText('main_buf_fill', parseFloat(data.buf_fill).toFixed(0));
                 }
                 if(data.buf_t1 !== undefined) setText('txt_buf_t1', fmt(data.buf_t1));
                 if(data.buf_t2 !== undefined) setText('txt_buf_t2', fmt(data.buf_t2));
                 if(data.buf_t3 !== undefined) setText('txt_buf_t3', fmt(data.buf_t3));
 
-                // 2. OFEN UPDATE
+                // BOILER
                 if(data.boil_temp !== undefined) {
                     setText('main_boil_temp', fmt(data.boil_temp));
                     setText('detail_boil_temp', fmt(data.boil_temp) + " °C");
@@ -263,7 +264,6 @@ class HeizungSystemOverview extends IPSModule
                     var isOn = (data.boil_state == true || data.boil_state == 1);
                     var flame = document.getElementById('flame_icon');
                     var detState = document.getElementById('detail_boil_state');
-                    
                     if(isOn) {
                         if(flame) flame.classList.add('flame-active');
                         if(detState) { detState.innerText = "BRENNER LÄUFT"; detState.style.color = "#e74c3c"; }
@@ -273,7 +273,7 @@ class HeizungSystemOverview extends IPSModule
                     }
                 }
 
-                // 3. HEIZKREIS UPDATE
+                // CIRCUIT
                 if(data.circ_temp !== undefined) {
                     setText('main_circ_temp', fmt(data.circ_temp));
                     setText('detail_circ_temp', fmt(data.circ_temp) + " °C");
@@ -282,7 +282,6 @@ class HeizungSystemOverview extends IPSModule
                     var isPumpOn = (data.circ_state == true || data.circ_state == 1);
                     var pump = document.getElementById('pump_icon');
                     var detPump = document.getElementById('detail_circ_state');
-                    
                     if(isPumpOn) {
                         if(pump) pump.classList.add('pump-active');
                         if(detPump) { detPump.innerText = "Pumpe LÄUFT"; detPump.style.color = "#27ae60"; }
@@ -293,24 +292,12 @@ class HeizungSystemOverview extends IPSModule
                 }
             }
 
-            // Helfer: Zahl formatieren
             function fmt(val) { return parseFloat(val).toFixed(1); }
-            // Helfer: Text setzen (nur wenn Element existiert)
-            function setText(id, val) {
-                var el = document.getElementById(id);
-                if(el) el.innerText = val;
-            }
-
-            // Modal Logic
-            function openModal(id) {
-                document.getElementById(id).style.display = 'flex';
-            }
-            function closeModal(id) {
-                document.getElementById(id).style.display = 'none';
-            }
+            function setText(id, val) { var el = document.getElementById(id); if(el) el.innerText = val; }
+            function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+            function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         </script>
 HTML;
-
         return $html;
     }
 }
