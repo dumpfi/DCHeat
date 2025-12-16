@@ -11,16 +11,16 @@ class HeizungskachelHTML extends IPSModule
         // ---------------------------------------------------------------------
         // 1. Eigenschaften
         // ---------------------------------------------------------------------
-        $this->RegisterPropertyInteger("SourceFill", 0);       
-        $this->RegisterPropertyInteger("SourceBoiler", 0);     
-        $this->RegisterPropertyInteger("SourcePuffer3", 0);    
-        $this->RegisterPropertyInteger("SourcePuffer2", 0);    
-        $this->RegisterPropertyInteger("SourcePuffer1", 0);    
+        $this->RegisterPropertyInteger("SourceFill", 0);
+        $this->RegisterPropertyInteger("SourceBoiler", 0);
+        $this->RegisterPropertyInteger("SourcePuffer3", 0);
+        $this->RegisterPropertyInteger("SourcePuffer2", 0);
+        $this->RegisterPropertyInteger("SourcePuffer1", 0);
 
-        $this->RegisterPropertyInteger("Boiler_State", 0);     
-        $this->RegisterPropertyInteger("Boiler_Temp", 0);      
-        $this->RegisterPropertyInteger("Circuit_State", 0);    
-        $this->RegisterPropertyInteger("Circuit_FlowTemp", 0); 
+        $this->RegisterPropertyInteger("Boiler_State", 0);
+        $this->RegisterPropertyInteger("Boiler_Temp", 0);
+        $this->RegisterPropertyInteger("Circuit_State", 0);
+        $this->RegisterPropertyInteger("Circuit_FlowTemp", 0);
 
         $this->SetVisualizationType(1);
     }
@@ -60,16 +60,16 @@ class HeizungskachelHTML extends IPSModule
         $getVal = function($propName) {
             $id = $this->ReadPropertyInteger($propName);
             if ($id > 0 && IPS_VariableExists($id)) return GetValue($id);
-            return 0; 
+            return 0;
         };
 
         $data = [
             'fill'    => $getVal("SourceFill"),
             't_boil'  => $getVal("SourceBoiler"),
-            't_p3'    => $getVal("SourcePuffer3"), 
+            't_p3'    => $getVal("SourcePuffer3"),
             't_p2'    => $getVal("SourcePuffer2"),
             't_p1'    => $getVal("SourcePuffer1"),
-            'ov_boil_state' => $getVal("Boiler_State"), 
+            'ov_boil_state' => $getVal("Boiler_State"),
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
             'ov_circ_state' => $getVal("Circuit_State"),
             'ov_circ_temp'  => $getVal("Circuit_FlowTemp"),
@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (Scharfe Welle, kleinere Amplitude)
+        // SVG TEIL 2: HAUPTÜBERSICHT (WELLE KORRIGIERT)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -180,7 +180,11 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <path id="wavePath" d="M 0 0 Q 30 5 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
+                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
+                   <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+                </filter>
+                
+                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
 
                 <clipPath id="overviewTankClip">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
@@ -207,9 +211,9 @@ class HeizungskachelHTML extends IPSModule
                     <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
                           style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
 
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 1px)); transition: transform 1s ease-in-out;">
-                        <g class="wave-anim" style="opacity: 1.0;">
-                             <use href="#wavePath" x="350" y="-3" fill="#e74c3c" />
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
+                        <g class="wave-anim" style="opacity: 0.9;">
+                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
                         </g>
                     </g>
 
