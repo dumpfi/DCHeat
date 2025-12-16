@@ -165,7 +165,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (ZURÜCK ZUR "ALTEN" VERSION MIT LINIE)
+        // SVG TEIL 2: HAUPTÜBERSICHT (Scharfe Welle, kleinere Amplitude)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -180,11 +180,7 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
-                <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
-                   <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
-                </filter>
-                
-                <path id="wavePath" d="M 0 0 Q 30 10 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
+                <path id="wavePath" d="M 0 0 Q 30 5 60 0 T 120 0 T 180 0 T 240 0 V 50 H 0 Z" />
 
                 <clipPath id="overviewTankClip">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
@@ -211,9 +207,9 @@ class HeizungskachelHTML extends IPSModule
                     <rect x="350" y="100" width="120" height="10" fill="url(#mainRed)" 
                           style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
 
-                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 2px)); transition: transform 1s ease-in-out;">
-                        <g class="wave-anim" style="opacity: 0.9;">
-                             <use href="#wavePath" x="350" y="-5" fill="#e74c3c" filter="url(#waveBlur)" />
+                    <g style="transform: translateY(calc(100px + (var(--fill-val) * 3px) - 1px)); transition: transform 1s ease-in-out;">
+                        <g class="wave-anim" style="opacity: 1.0;">
+                             <use href="#wavePath" x="350" y="-3" fill="#e74c3c" />
                         </g>
                     </g>
 
