@@ -74,7 +74,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // SVG TEIL 1: POPUP INHALT (Unverändert)
+        // SVG TEIL 1: POPUP INHALT (Original)
         // -----------------------------------------------------------
         $popupBufferContent = '
         <svg width="100%" height="100%" viewBox="0 0 450 650" xmlns="http://www.w3.org/2000/svg" id="tankSvg">
@@ -153,7 +153,7 @@ class HeizungskachelHTML extends IPSModule
         </svg>';
 
         // -----------------------------------------------------------
-        // SVG TEIL 2: HAUPTÜBERSICHT (MASKIERUNG + STÄRKERER BLUR)
+        // SVG TEIL 2: HAUPTÜBERSICHT (FINALER LOOK: FADE WIE POPUP + WELLE)
         // -----------------------------------------------------------
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -162,7 +162,8 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="0%" stop-color="#3498db"/>
                     <stop offset="100%" stop-color="#2980b9"/>
                 </linearGradient>
-                <linearGradient id="mainRed" x1="0" y1="0" x2="0" y2="1">
+                
+                <linearGradient id="mainRedFade" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="#e74c3c" stop-opacity="1"/>
                     <stop offset="80%" stop-color="#e74c3c" stop-opacity="1"/>
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
@@ -173,7 +174,7 @@ class HeizungskachelHTML extends IPSModule
                 </clipPath>
 
                 <filter id="maskBlur" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur" />
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
                 </filter>
 
                 <mask id="hotWaterMask" maskUnits="userSpaceOnUse" filter="url(#maskBlur)">
@@ -200,7 +201,7 @@ class HeizungskachelHTML extends IPSModule
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 <g clip-path="url(#tankClipRound)">
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
-                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRed)" mask="url(#hotWaterMask)" />
+                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRedFade)" mask="url(#hotWaterMask)" />
                 </g> 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
@@ -239,7 +240,7 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 2s linear infinite; }
             .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
-            /* Mask Animation */
+            /* Animation Maske */
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
                 to { transform: translateX(-240px); } 
