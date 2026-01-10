@@ -109,7 +109,6 @@ class HeizungskachelHTML extends IPSModule
         // 1. DYNAMISCHE HEIZKREIS GENERIERUNG (PHP)
         // -----------------------------------------------------------
         $hkSVG = "";
-        $activeCircuits = 0;
         
         // Wir prüfen, welche Heizkreise konfiguriert sind
         $configuredCircuits = [];
@@ -121,19 +120,16 @@ class HeizungskachelHTML extends IPSModule
         $count = count($configuredCircuits);
         
         // Layout Berechnung
-        // Start Y Position für den ersten Heizkreis
         $startY = 100; 
-        // Höhe pro Heizkreis Block
         $blockHeight = ($count > 4) ? 70 : 90; // Wenn viele, dann enger zusammen
-        // Abstand
         $gap = 10;
 
         // Verteilerrohr (Vertikal)
         if ($count > 0) {
             $totalHeight = ($count * $blockHeight) + (($count-1)*$gap);
-            // Rotes Rohr vom Puffer nach rechts oben
+            // Rotes Rohr vom Puffer nach rechts oben (x=580)
             $hkSVG .= '<path d="M 470 200 L 580 200 L 580 '.($startY + $totalHeight - 40).'" stroke="#e74c3c" stroke-width="8" fill="none" />';
-            // Blaues Rohr (Rücklauf)
+            // Blaues Rohr (Rücklauf) (x=560)
             $hkSVG .= '<path d="M 470 300 L 560 300 L 560 '.($startY + $totalHeight - 20).'" stroke="#3498db" stroke-width="8" fill="none" />';
         }
 
@@ -141,13 +137,13 @@ class HeizungskachelHTML extends IPSModule
             $yPos = $startY + ($index * ($blockHeight + $gap));
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
             
-            // Ein einzelner Heizkreis Block
+            // Ein einzelner Heizkreis Block (beginnt bei x=600)
             $hkSVG .= '
             <g class="clickable" onclick="openModal(\'modal_circuit_'.$cIndex.'\')" transform="translate(600, '.$yPos.')">
                 <rect x="0" y="0" width="190" height="'.$blockHeight.'" rx="5" fill="#34495e" stroke="#2c3e50" stroke-width="2"/>
                 
-                <line x1="-20" y1="'.($blockHeight/2 - 10).'" x2="0" y2="'.($blockHeight/2 - 10).'" stroke="#e74c3c" stroke-width="4" />
-                <line x1="-40" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
+                <line x1="-40" y1="'.($blockHeight/2 - 10).'" x2="0" y2="'.($blockHeight/2 - 10).'" stroke="#e74c3c" stroke-width="4" />
+                <line x1="-60" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
 
                 <text x="10" y="20" fill="#e67e22" font-weight="bold" font-size="14" font-family="Arial">'.$name.'</text>
                 
@@ -185,8 +181,6 @@ class HeizungskachelHTML extends IPSModule
         // -----------------------------------------------------------
         // 3. HAUPT SVG ZUSAMMENBAUEN
         // -----------------------------------------------------------
-        // Hinweis: Die Rohre zum Puffer sind jetzt Teil des dynamischen Teils oben, 
-        // oder wir verbinden den Puffer fix bis zu einem gewissen Punkt.
         
         $mainOverview = '
         <svg viewBox="0 0 800 500" style="width:100%; height:100%;">
@@ -213,8 +207,8 @@ class HeizungskachelHTML extends IPSModule
 
             <g class="clickable" onclick="openModal(\'modal_boiler\')">
                 <rect id="main_boiler_rect" x="50" y="150" width="170" height="200" rx="5" fill="#95a5a6" stroke="#7f8c8d" stroke-width="3" style="transition: fill 0.5s;"/>
-                <text x="135" y="180" text-anchor="middle" fill="white" font-weight="bold" font-size="18">OFEN</text>
-                <text id="boiler_status_text" x="135" y="200" text-anchor="middle" fill="white" font-size="12" font-style="italic">Aus</text>
+                <text x="135" y="180" text-anchor="middle" fill="#e67e22" font-weight="bold" font-size="18">OFEN</text>
+                <text id="boiler_status_text" x="135" y="200" text-anchor="middle" fill="#e67e22" font-size="12" font-style="italic">Aus</text>
                 <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f9ca24" id="flame_icon" style="opacity: 0; transition: opacity 0.5s, fill 0.5s;"/>
                 <g id="warning_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
                     <path d="M 0 -30 L -25 20 L 25 20 Z" fill="#f9ca24" stroke="#e67e22" stroke-width="2" stroke-linejoin="round"/>
@@ -223,7 +217,7 @@ class HeizungskachelHTML extends IPSModule
                 <g id="alert_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
                     <text x="0" y="15" text-anchor="middle" fill="#f9ca24" font-weight="bold" font-size="50" style="text-shadow: 1px 1px 2px #a04000;">!</text>
                 </g>
-                <text x="135" y="330" text-anchor="middle" fill="white" font-size="16"><tspan id="main_boil_temp">--</tspan> °C</text>
+                <text x="135" y="330" text-anchor="middle" fill="#e67e22" font-size="16"><tspan id="main_boil_temp">--</tspan> °C</text>
             </g>
 
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
@@ -232,15 +226,20 @@ class HeizungskachelHTML extends IPSModule
                     <rect x="350" y="100" width="120" height="10" fill="url(#mainRedFade)" mask="url(#hotWaterMask)" style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
                 </g> 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
-                <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
-                <text x="410" y="280" text-anchor="middle" fill="white" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
+                <text x="410" y="250" text-anchor="middle" fill="#e67e22" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
+                <text x="410" y="280" text-anchor="middle" fill="#e67e22" font-size="14" style="text-shadow: 1px 1px 2px #333;"><tspan id="main_buf_fill">--</tspan> %</text>
+            </g>
+
+            <g class="clickable" onclick="openModal(\'modal_circuit\')">
+                <rect x="600" y="150" width="150" height="200" rx="5" fill="#34495e" stroke="#2c3e50" stroke-width="3"/>
+                <text x="675" y="190" text-anchor="middle" fill="#e67e22" font-weight="bold" font-size="18">HEIZKREIS</text>
+                <circle cx="675" cy="250" r="20" stroke="white" stroke-width="2" fill="none"/>
+                <path d="M 675 250 L 690 235 L 690 265 Z" fill="white" id="pump_icon" transform-origin="675 250"/>
+                <text x="675" y="330" text-anchor="middle" fill="#e67e22" font-size="16"><tspan id="main_circ_temp">--</tspan> °C</text>
             </g>
         </svg>';
 
         // Popup Puffer Content (gekürzt für Übersichtlichkeit, ist der gleiche wie vorher)
-        // Du kannst hier deinen existierenden Popup-Code einfügen.
-        // Der Einfachheit halber nutze ich hier einen Platzhalter, da sich dieser Teil nicht geändert hat.
-        // Falls du den vollständigen Code brauchst, nimm den aus der vorherigen Antwort.
         $popupBufferContent = $this->getBufferPopupSVG(); 
 
         $html = <<<HTML
@@ -259,7 +258,7 @@ class HeizungskachelHTML extends IPSModule
             .pump-active { animation: spin 1s linear infinite; fill: #2ecc71 !important; }
             .pump-inactive { fill: white !important; }
 
-            .flame-active { opacity: 1 !important; filter: drop-shadow(0 0 5px #f1c40f); }
+            .flame-active { opacity: 1 !important; fill: #f9ca24 !important; filter: drop-shadow(0 0 5px #f9ca24); }
             @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
             .blink-active { animation: blink 1s infinite; opacity: 1 !important; }
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
@@ -283,6 +282,17 @@ class HeizungskachelHTML extends IPSModule
                         <h2>Kessel Status</h2>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
                         <div id="detail_boil_state" style="font-size: 20px; font-weight:bold; color:#7f8c8d;">AUS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal_circuit" class="modal-overlay">
+                <div class="modal-content" style="max-width: 400px; max-height: 300px;">
+                    <div class="close-btn" onclick="closeModal('modal_circuit')">&times;</div>
+                    <div class="modal-body" style="text-align:center; padding-top:40px;">
+                        <h2>Heizkreis</h2>
+                        <div style="font-size: 40px; margin: 20px 0; color:#e67e22;" id="detail_circ_temp">-- °C</div>
+                        <div id="detail_circ_state" style="font-size: 20px;">Pumpe AUS</div>
                     </div>
                 </div>
             </div>
@@ -358,6 +368,24 @@ class HeizungskachelHTML extends IPSModule
                     if(boilRect) boilRect.setAttribute("fill", bColor);
                     if(statusText) statusText.textContent = sText;
                     if(detState) { detState.textContent = sText; detState.style.color = sColor; }
+                }
+
+                // --- Heizkreis (Statisch) Logic ---
+                if(data.ov_circ_temp !== undefined) {
+                    setText('main_circ_temp', fmt(data.ov_circ_temp));
+                    setText('detail_circ_temp', fmt(data.ov_circ_temp) + " °C");
+                }
+                if(data.ov_circ_state !== undefined) {
+                    var isPumpOn = (data.ov_circ_state == true || data.ov_circ_state == 1);
+                    var pump = document.getElementById('pump_icon');
+                    var detPump = document.getElementById('detail_circ_state');
+                    if(isPumpOn) {
+                        if(pump) pump.classList.add('pump-active');
+                        if(detPump) { detPump.innerText = "Pumpe LÄUFT"; detPump.style.color = "#27ae60"; }
+                    } else {
+                        if(pump) pump.classList.remove('pump-active');
+                        if(detPump) { detPump.innerText = "Pumpe AUS"; detPump.style.color = "#7f8c8d"; }
+                    }
                 }
 
                 // --- Dynamische Heizkreise Logic ---
