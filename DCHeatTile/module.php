@@ -114,11 +114,29 @@ class HeizungskachelHTML extends IPSModule
         $blockHeight = ($count > 4) ? 70 : 90; 
         $gap = 10;
 
-        // Verteilerrohre zeichnen
+        // --- ROHR-LOGIK (KORRIGIERT: OBEN UND UNTEN) ---
         if ($count > 0) {
-            $totalHeight = ($count * $blockHeight) + (($count-1)*$gap);
-            $hkSVG .= '<path d="M 470 200 L 580 200 L 580 '.($startY + $totalHeight - 40).'" stroke="#e74c3c" stroke-width="8" fill="none" />';
-            $hkSVG .= '<path d="M 470 300 L 560 300 L 560 '.($startY + $totalHeight - 20).'" stroke="#3498db" stroke-width="8" fill="none" />';
+            // 1. Zuleitungen vom Puffer zum Verteilerbalken (Horizontal)
+            $hkSVG .= '<path d="M 470 200 L 580 200" stroke="#e74c3c" stroke-width="8" fill="none" />';
+            $hkSVG .= '<path d="M 470 300 L 560 300" stroke="#3498db" stroke-width="8" fill="none" />';
+
+            // 2. Berechnung der vertikalen Ausdehnung
+            // Oberster Punkt (Anschluss am 1. Heizkreis)
+            $yTopRed  = $startY + ($blockHeight/2) - 10;
+            $yTopBlue = $startY + ($blockHeight/2) + 20;
+
+            // Unterster Punkt (Anschluss am letzten Heizkreis)
+            // Index des letzten Elements ist count-1
+            $yBottomIndex = $count - 1;
+            $yBottomBase  = $startY + ($yBottomIndex * ($blockHeight + $gap));
+            $yBotRed      = $yBottomBase + ($blockHeight/2) - 10;
+            $yBotBlue     = $yBottomBase + ($blockHeight/2) + 20;
+
+            // 3. Zeichnen der vertikalen Verteilerbalken (Von ganz oben bis ganz unten)
+            // Rotes Vertikalrohr (x=580)
+            $hkSVG .= '<path d="M 580 '.$yTopRed.' L 580 '.$yBotRed.'" stroke="#e74c3c" stroke-width="8" fill="none" />';
+            // Blaues Vertikalrohr (x=560)
+            $hkSVG .= '<path d="M 560 '.$yTopBlue.' L 560 '.$yBotBlue.'" stroke="#3498db" stroke-width="8" fill="none" />';
         }
 
         foreach($configuredCircuits as $index => $cIndex) {
@@ -184,8 +202,9 @@ class HeizungskachelHTML extends IPSModule
             </defs>
 
             <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
-            <path d="M 470 200 L 500 200" stroke="#e74c3c" stroke-width="8" /> 
-            <path d="M 470 300 L 500 300" stroke="#3498db" stroke-width="8" /> 
+            
+            <path d="M 470 200 L 480 200" stroke="#e74c3c" stroke-width="8" /> 
+            <path d="M 470 300 L 480 300" stroke="#3498db" stroke-width="8" /> 
 
             '.$hkSVG.'
 
@@ -193,9 +212,7 @@ class HeizungskachelHTML extends IPSModule
                 <rect id="main_boiler_rect" x="50" y="150" width="170" height="200" rx="5" fill="#95a5a6" stroke="#7f8c8d" stroke-width="3" style="transition: fill 0.5s;"/>
                 <text x="135" y="180" text-anchor="middle" style="fill: white; font-weight: bold; font-size: 18px;">OFEN</text>
                 <text id="boiler_status_text" x="135" y="200" text-anchor="middle" style="fill: white; font-size: 12px; font-style: italic;">Aus</text>
-                
                 <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f9ca24" id="flame_icon" style="opacity: 0; transition: opacity 0.5s, fill 0.5s;"/>
-                
                 <g id="warning_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
                     <path d="M 0 -30 L -25 20 L 25 20 Z" fill="#f9ca24" stroke="#e67e22" stroke-width="2" stroke-linejoin="round"/>
                     <text x="0" y="10" text-anchor="middle" fill="#e74c3c" font-weight="bold" font-size="24">!</text>
@@ -203,7 +220,6 @@ class HeizungskachelHTML extends IPSModule
                 <g id="alert_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
                     <text x="0" y="15" text-anchor="middle" fill="#f9ca24" font-weight="bold" font-size="50" style="text-shadow: 1px 1px 2px #a04000;">!</text>
                 </g>
-                
                 <text x="135" y="330" text-anchor="middle" style="fill: white; font-size: 16px;"><tspan id="main_boil_temp">--</tspan> °C</text>
             </g>
 
