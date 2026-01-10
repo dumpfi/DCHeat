@@ -12,13 +12,8 @@ class HeizungskachelHTML extends IPSModule
         $this->RegisterPropertyInteger("SourcePuffer3", 0);    
         $this->RegisterPropertyInteger("SourcePuffer2", 0);    
         $this->RegisterPropertyInteger("SourcePuffer1", 0);    
-        
-        // Diese Variable steuert nun die Farbe (1=Grau, 6=Orange)
         $this->RegisterPropertyInteger("Boiler_State", 0);     
-        
-        // Diese Variable liefert die Temperatur
         $this->RegisterPropertyInteger("Boiler_Temp", 0);      
-        
         $this->RegisterPropertyInteger("Circuit_State", 0);    
         $this->RegisterPropertyInteger("Circuit_FlowTemp", 0); 
         $this->SetVisualizationType(1);
@@ -65,7 +60,7 @@ class HeizungskachelHTML extends IPSModule
             't_p3'    => $getVal("SourcePuffer3"), 
             't_p2'    => $getVal("SourcePuffer2"),
             't_p1'    => $getVal("SourcePuffer1"),
-            'ov_boil_state' => $getVal("Boiler_State"), // Hier kommt jetzt z.B. 1 oder 6 an
+            'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
             'ov_circ_state' => $getVal("Circuit_State"),
             'ov_circ_temp'  => $getVal("Circuit_FlowTemp"),
@@ -173,6 +168,11 @@ class HeizungskachelHTML extends IPSModule
                     <stop offset="100%" stop-color="#e74c3c" stop-opacity="0"/>
                 </linearGradient>
 
+                <linearGradient id="boilerHalfGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="50%" stop-color="#95a5a6"/>
+                    <stop offset="50%" stop-color="#d35400"/>
+                </linearGradient>
+
                 <clipPath id="tankClipRound">
                     <rect x="350" y="100" width="120" height="300" rx="10" />
                 </clipPath>
@@ -198,8 +198,11 @@ class HeizungskachelHTML extends IPSModule
             <g class="clickable" onclick="openModal(\'modal_boiler\')">
                 <rect id="main_boiler_rect" x="50" y="150" width="170" height="200" rx="5" fill="#95a5a6" stroke="#7f8c8d" stroke-width="3" style="transition: fill 0.5s;"/>
                 
-                <text x="135" y="190" text-anchor="middle" fill="white" font-weight="bold" font-size="18">OFEN</text>
-                <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f1c40f" id="flame_icon" style="opacity: 0"/>
+                <text x="135" y="180" text-anchor="middle" fill="white" font-weight="bold" font-size="18">OFEN</text>
+                
+                <text id="boiler_status_text" x="135" y="200" text-anchor="middle" fill="white" font-size="12" font-style="italic">Aus</text>
+
+                <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f1c40f" id="flame_icon" style="opacity: 0; transition: opacity 0.5s, fill 0.5s;"/>
                 
                 <text x="135" y="330" text-anchor="middle" fill="white" font-size="16"><tspan id="main_boil_temp">--</tspan> °C</text>
             </g>
@@ -207,7 +210,10 @@ class HeizungskachelHTML extends IPSModule
             <g class="clickable" onclick="openModal(\'modal_buffer\')">
                 <g clip-path="url(#tankClipRound)">
                     <rect x="350" y="100" width="120" height="300" fill="url(#mainBlue)" />
-                    <rect x="350" y="100" width="120" height="300" fill="url(#mainRedFade)" mask="url(#hotWaterMask)" />
+                    <rect x="350" y="100" width="120" height="10" 
+                          fill="url(#mainRedFade)" 
+                          mask="url(#hotWaterMask)"
+                          style="height: calc(var(--fill-val) * 3px); transition: height 1s ease-in-out;" />
                 </g> 
                 <rect x="350" y="100" width="120" height="300" rx="10" fill="none" stroke="#7f8c8d" stroke-width="3"/>
                 <text x="410" y="250" text-anchor="middle" fill="white" font-weight="bold" font-size="18" style="text-shadow: 1px 1px 2px #333;">PUFFER</text>
@@ -244,7 +250,7 @@ class HeizungskachelHTML extends IPSModule
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
-            .flame-active { opacity: 1 !important; fill: #e74c3c !important; filter: drop-shadow(0 0 5px #f1c40f); }
+            .flame-active { opacity: 1 !important; filter: drop-shadow(0 0 5px #f1c40f); }
 
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
@@ -310,29 +316,46 @@ class HeizungskachelHTML extends IPSModule
                     setText('detail_boil_temp', fmt(data.ov_boil_temp) + " °C");
                 }
                 if(data.ov_boil_state !== undefined) {
-                    // KORREKTUR: Auswerten der Zahlenwerte 1 und 6
                     var state = parseInt(data.ov_boil_state);
                     var flame = document.getElementById('flame_icon');
                     var detState = document.getElementById('detail_boil_state');
                     var boilRect = document.getElementById('main_boiler_rect');
+                    var statusText = document.getElementById('boiler_status_text');
 
-                    if(state === 6) {
-                        // Zustand 6: Betrieb (Orange)
-                        if(flame) flame.classList.add('flame-active');
-                        if(boilRect) { 
-                            boilRect.style.fill = "#d35400"; 
-                            boilRect.style.stroke = "#a04000";
-                        }
-                        if(detState) { detState.innerText = "BRENNER LÄUFT"; detState.style.color = "#e74c3c"; }
-                    } else {
-                        // Zustand 1 (oder andere): Standby (Grau)
-                        if(flame) flame.classList.remove('flame-active');
-                        if(boilRect) { 
-                            boilRect.style.fill = "#95a5a6"; 
-                            boilRect.style.stroke = "#7f8c8d";
-                        }
-                        if(detState) { detState.innerText = "STANDBY"; detState.style.color = "#7f8c8d"; }
+                    // Default (Fallback für unbekannte Zustände)
+                    var bColor = "#95a5a6"; // Grau
+                    var fOpacity = 0;
+                    var fColor = "#f1c40f";
+                    var sText = "Aus";
+
+                    switch(state) {
+                        case 1: // Aus
+                            bColor = "#95a5a6"; fOpacity = 0; sText = "Aus";
+                            break;
+                        case 6: // Leistungsbrand
+                            bColor = "#d35400"; fOpacity = 1; fColor = "#f1c40f"; sText = "Leistungsbrand";
+                            break;
+                        case 2: // Zündung warten
+                            bColor = "#95a5a6"; fOpacity = 1; fColor = "#7f8c8d"; sText = "Zündung warten";
+                            break;
+                        case 3: // Zündung
+                            bColor = "#95a5a6"; fOpacity = 1; fColor = "#d35400"; sText = "Zündung";
+                            break;
+                        case 4: // Anheizen (Halb/Halb)
+                            bColor = "url(#boilerHalfGradient)"; fOpacity = 1; fColor = "#d35400"; sText = "Anheizen";
+                            break;
+                        case 9: // Ausbrand
+                            bColor = "#d35400"; fOpacity = 0; sText = "Ausbrand";
+                            break;
                     }
+
+                    if(boilRect) boilRect.setAttribute("fill", bColor);
+                    if(flame) {
+                        flame.style.opacity = fOpacity;
+                        flame.setAttribute("fill", fColor);
+                    }
+                    if(statusText) statusText.textContent = sText;
+                    if(detState) { detState.textContent = sText; } // Auch im Popup updaten
                 }
                 if(data.ov_circ_temp !== undefined) {
                     setText('main_circ_temp', fmt(data.ov_circ_temp));
