@@ -199,11 +199,19 @@ class HeizungskachelHTML extends IPSModule
                 <rect id="main_boiler_rect" x="50" y="150" width="170" height="200" rx="5" fill="#95a5a6" stroke="#7f8c8d" stroke-width="3" style="transition: fill 0.5s;"/>
                 
                 <text x="135" y="180" text-anchor="middle" fill="white" font-weight="bold" font-size="18">OFEN</text>
-                
                 <text id="boiler_status_text" x="135" y="200" text-anchor="middle" fill="white" font-size="12" font-style="italic">Aus</text>
 
-                <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f1c40f" id="flame_icon" style="opacity: 0; transition: opacity 0.5s, fill 0.5s;"/>
+                <path d="M 135 220 Q 155 260 135 300 Q 115 260 135 220" fill="#f9ca24" id="flame_icon" style="opacity: 0; transition: opacity 0.5s, fill 0.5s;"/>
                 
+                <g id="warning_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
+                    <path d="M 0 -30 L -25 20 L 25 20 Z" fill="#f9ca24" stroke="#e67e22" stroke-width="2" stroke-linejoin="round"/>
+                    <text x="0" y="10" text-anchor="middle" fill="#e74c3c" font-weight="bold" font-size="24">!</text>
+                </g>
+
+                 <g id="alert_icon" style="opacity: 0; transition: opacity 0.5s;" transform="translate(135, 250)">
+                    <text x="0" y="15" text-anchor="middle" fill="#f9ca24" font-weight="bold" font-size="50" style="text-shadow: 1px 1px 2px #a04000;">!</text>
+                </g>
+
                 <text x="135" y="330" text-anchor="middle" fill="white" font-size="16"><tspan id="main_boil_temp">--</tspan> °C</text>
             </g>
 
@@ -250,7 +258,14 @@ class HeizungskachelHTML extends IPSModule
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 2s linear infinite; }
-            .flame-active { opacity: 1 !important; filter: drop-shadow(0 0 5px #f1c40f); }
+            /* NEU: Helles Gelb für die Flamme */
+            .flame-active { opacity: 1 !important; fill: #f9ca24 !important; filter: drop-shadow(0 0 5px #f9ca24); }
+            
+            /* NEU: Blink-Animation für Warnungen */
+            @keyframes blink { 
+                0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; }
+            }
+            .blink-active { animation: blink 1s infinite; opacity: 1 !important; }
 
             @keyframes waveSlideMask {
                 from { transform: translateX(0px); }
@@ -318,44 +333,64 @@ class HeizungskachelHTML extends IPSModule
                 if(data.ov_boil_state !== undefined) {
                     var state = parseInt(data.ov_boil_state);
                     var flame = document.getElementById('flame_icon');
+                    var warnIcon = document.getElementById('warning_icon');
+                    var alertIcon = document.getElementById('alert_icon');
                     var detState = document.getElementById('detail_boil_state');
                     var boilRect = document.getElementById('main_boiler_rect');
                     var statusText = document.getElementById('boiler_status_text');
 
-                    // Default (Fallback für unbekannte Zustände)
-                    var bColor = "#95a5a6"; // Grau
-                    var fOpacity = 0;
-                    var fColor = "#f1c40f";
+                    // Helper zum Zurücksetzen aller Icons
+                    function resetIcons() {
+                        if(flame) { flame.classList.remove('flame-active'); flame.style.opacity = 0; }
+                        if(warnIcon) { warnIcon.classList.remove('blink-active'); warnIcon.style.opacity = 0; }
+                        if(alertIcon) { alertIcon.classList.remove('blink-active'); alertIcon.style.opacity = 0; }
+                    }
+                    resetIcons();
+
+                    var bColor = "#95a5a6"; // Default Grau
                     var sText = "Aus";
+                    var sColor = "#7f8c8d"; // Default Textfarbe
 
                     switch(state) {
                         case 1: // Aus
-                            bColor = "#95a5a6"; fOpacity = 0; sText = "Aus";
+                            bColor = "#95a5a6"; sText = "Aus";
                             break;
-                        case 6: // Leistungsbrand
-                            bColor = "#d35400"; fOpacity = 1; fColor = "#f1c40f"; sText = "Leistungsbrand";
+                        case 6: // Leistungsbrand (Gelbe Flamme)
+                            bColor = "#d35400"; sText = "Leistungsbrand"; sColor = "#e74c3c";
+                            if(flame) { flame.classList.add('flame-active'); flame.setAttribute("fill", "#f9ca24"); }
                             break;
-                        case 2: // Zündung warten
-                            bColor = "#95a5a6"; fOpacity = 1; fColor = "#7f8c8d"; sText = "Zündung warten";
+                        case 2: // Zündung warten (Graue Flamme)
+                            bColor = "#95a5a6"; sText = "Zündung warten";
+                            if(flame) { flame.style.opacity = 1; flame.setAttribute("fill", "#7f8c8d"); }
                             break;
-                        case 3: // Zündung
-                            bColor = "#95a5a6"; fOpacity = 1; fColor = "#d35400"; sText = "Zündung";
+                        case 3: // Zündung (Gelbe Flamme)
+                            bColor = "#95a5a6"; sText = "Zündung";
+                            if(flame) { flame.style.opacity = 1; flame.setAttribute("fill", "#f9ca24"); }
                             break;
-                        case 4: // Anheizen (Halb/Halb)
-                            bColor = "url(#boilerHalfGradient)"; fOpacity = 1; fColor = "#d35400"; sText = "Anheizen";
+                        case 4: // Anheizen (Halb/Halb, Gelbe Flamme)
+                            bColor = "url(#boilerHalfGradient)"; sText = "Anheizen";
+                            if(flame) { flame.style.opacity = 1; flame.setAttribute("fill", "#f9ca24"); }
                             break;
-                        case 9: // Ausbrand
-                            bColor = "#d35400"; fOpacity = 0; sText = "Ausbrand";
+                        case 9: // Ausbrand (Orange, keine Flamme)
+                            bColor = "#d35400"; sText = "Ausbrand";
+                            break;
+                        // NEUE ZUSTÄNDE
+                        case 11: // Restwärme (Halb/Halb, keine Flamme)
+                            bColor = "url(#boilerHalfGradient)"; sText = "Restwärme";
+                            break;
+                        case 12: // Übertemperatur (Rot, blinkendes Dreieck)
+                            bColor = "#c0392b"; sText = "Übertemperatur!"; sColor = "#c0392b";
+                            if(warnIcon) warnIcon.classList.add('blink-active');
+                            break;
+                        case 13: // Türe offen (Orange, blinkendes Rufzeichen)
+                            bColor = "#d35400"; sText = "Türe offen!"; sColor = "#e74c3c";
+                            if(alertIcon) alertIcon.classList.add('blink-active');
                             break;
                     }
 
                     if(boilRect) boilRect.setAttribute("fill", bColor);
-                    if(flame) {
-                        flame.style.opacity = fOpacity;
-                        flame.setAttribute("fill", fColor);
-                    }
                     if(statusText) statusText.textContent = sText;
-                    if(detState) { detState.textContent = sText; } // Auch im Popup updaten
+                    if(detState) { detState.textContent = sText; detState.style.color = sColor; }
                 }
                 if(data.ov_circ_temp !== undefined) {
                     setText('main_circ_temp', fmt(data.ov_circ_temp));
