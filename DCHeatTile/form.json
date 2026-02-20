@@ -1,5 +1,9 @@
 {
     "elements": [
+        { "type": "Label", "caption": "--- UMWELTDATEN ---" },
+        { "type": "SelectVariable", "name": "OutsideTemp", "caption": "Außentemperatur" },
+        { "type": "SelectVariable", "name": "AvgOutsideTemp", "caption": "Gemittelte Außentemperatur" },
+
         { "type": "Label", "caption": "--- PUFFER SPEICHER ---" },
         { "type": "SelectVariable", "name": "SourceFill", "caption": "Füllstand (in %)" },
         { "type": "SelectVariable", "name": "SourceBoiler", "caption": "Temperatur Oben (Warmwasser)" },

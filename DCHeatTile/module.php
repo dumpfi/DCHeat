@@ -26,6 +26,11 @@ class HeizungskachelHTML extends IPSModule
     {
         parent::Create();
         
+        // Umweltdaten (Neu)
+        $this->RegisterPropertyInteger("OutsideTemp", 0);
+        $this->RegisterPropertyInteger("AvgOutsideTemp", 0);
+
+        // Puffer & Kessel
         $this->RegisterPropertyInteger("SourceFill", 0);       
         $this->RegisterPropertyInteger("SourceBoiler", 0);     
         $this->RegisterPropertyInteger("SourcePuffer3", 0);    
@@ -55,6 +60,7 @@ class HeizungskachelHTML extends IPSModule
         }
 
         $vars = [
+            "OutsideTemp", "AvgOutsideTemp", // Neu hinzugefügt
             "SourceFill", "SourceBoiler", "SourcePuffer3", "SourcePuffer2", "SourcePuffer1",
             "Boiler_State", "Boiler_Temp"
         ];
@@ -89,6 +95,10 @@ class HeizungskachelHTML extends IPSModule
         };
 
         $data = [
+            // Neu: Außentemperaturen
+            't_out'     => $getVal("OutsideTemp"),
+            't_out_avg' => $getVal("AvgOutsideTemp"),
+
             'fill'    => $getVal("SourceFill"),
             't_boil'  => $getVal("SourceBoiler"),
             't_p3'    => $getVal("SourcePuffer3"), 
@@ -164,7 +174,6 @@ class HeizungskachelHTML extends IPSModule
                 <line x1="-40" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
 
                 <text x="10" y="20" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
-                
                 <text id="main_mode_text_'.$cIndex.'" x="10" y="38" style="fill: #e67e22; font-family: Arial; font-size: 11px; opacity: 0.8;">Modus: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
@@ -217,7 +226,6 @@ class HeizungskachelHTML extends IPSModule
                                 <div class="dropdown-menu">
                                     '.$dropdownItemsHTML.'
                                 </div>
-
                                 <div class="dropdown-trigger">
                                     <span id="current_icon_'.$cIndex.'" class="mode-icon">
                                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#bdc3c7" stroke-width="2" fill="none"/></svg>
@@ -251,6 +259,13 @@ class HeizungskachelHTML extends IPSModule
                     </g>
                 </mask>
             </defs>
+
+            <g transform="translate(410, 40)">
+                <rect x="-140" y="-18" width="280" height="34" rx="17" fill="#34495e" stroke="#2c3e50" stroke-width="2" />
+                <text x="0" y="4" text-anchor="middle" style="fill: #ecf0f1; font-family: Arial; font-weight: bold; font-size: 14px;">
+                    Außen: <tspan id="main_out_temp" style="fill: #3498db;">--</tspan> °C  |  Ø <tspan id="main_out_avg_temp" style="fill: #3498db;">--</tspan> °C
+                </text>
+            </g>
 
             <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
             <path d="M 470 200 L 480 200" stroke="#e74c3c" stroke-width="8" /> 
@@ -286,7 +301,6 @@ class HeizungskachelHTML extends IPSModule
 
         $popupBufferContent = $this->getBufferPopupSVG(); 
 
-        // Arrays für JavaScript
         $modeMapJSON = json_encode($this->hkModes);
         $iconMapJSON = json_encode($this->hkIcons);
 
@@ -311,7 +325,6 @@ class HeizungskachelHTML extends IPSModule
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
             .wave-anim-mask { animation: waveSlideMask 6s linear infinite; }
 
-            /* CSS für das Drop-Up Menü */
             .custom-dropdown {
                 position: relative;
                 display: inline-block;
@@ -337,16 +350,12 @@ class HeizungskachelHTML extends IPSModule
             .dropdown-arrow { margin-left: auto; font-size: 12px; color: #7f8c8d; }
             
             .dropdown-menu {
-                /* Sichtbarkeit statt display:none zur Steuerung nutzen */
                 display: grid; 
                 grid-template-columns: 1fr 1fr;
                 visibility: hidden;
                 opacity: 0;
-                
-                /* DER TRICK FÜR MAUS-NUTZER: 0.6s Zeitverzögerung bevor es sich schließt! */
                 transition: opacity 0.2s ease, visibility 0.2s ease;
                 transition-delay: 0.6s; 
-                
                 position: absolute;
                 bottom: 100%; 
                 left: 0;
@@ -361,11 +370,9 @@ class HeizungskachelHTML extends IPSModule
                 overflow-y: auto; 
             }
             
-            /* Wenn der Mauszeiger im Container ist */
             .custom-dropdown:hover .dropdown-menu {
                 visibility: visible;
                 opacity: 1;
-                /* Beim Einblenden keine Zeitverzögerung */
                 transition-delay: 0s; 
             }
 
@@ -428,6 +435,14 @@ class HeizungskachelHTML extends IPSModule
 
             function updateView(data) {
                 if (!data) return;
+
+                // Neu: Umweltdaten updaten
+                if(data.t_out !== undefined) {
+                    setText('main_out_temp', fmt(data.t_out));
+                }
+                if(data.t_out_avg !== undefined) {
+                    setText('main_out_avg_temp', fmt(data.t_out_avg));
+                }
                 
                 if(data.fill !== undefined) {
                     document.documentElement.style.setProperty('--fill-val', data.fill);
@@ -489,7 +504,6 @@ class HeizungskachelHTML extends IPSModule
 
                 if(data.circuits) {
                     data.circuits.forEach(function(c) {
-                        // Temp & Pumpe Update
                         setText('val_temp_' + c.id, fmt(c.temp));
                         setText('detail_temp_' + c.id, fmt(c.temp) + " °C");
                         
@@ -505,7 +519,6 @@ class HeizungskachelHTML extends IPSModule
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
-                        // MODUS Update
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
