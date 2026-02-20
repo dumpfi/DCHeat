@@ -179,7 +179,7 @@ class HeizungskachelHTML extends IPSModule
         }
 
         // -----------------------------------------------------------
-        // 2. MODALS GENERIEREN (KOMPAKTES DROP-UP MENÜ)
+        // 2. MODALS GENERIEREN
         // -----------------------------------------------------------
         $modalsHTML = "";
         foreach($configuredCircuits as $cIndex) {
@@ -300,7 +300,6 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             .close-btn { position: absolute; top: 5px; right: 10px; font-size: 30px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 200; }
-            /* Overflow MUSS visible sein, damit Dropdowns nicht abgeschnitten werden */
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
             @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -312,7 +311,7 @@ class HeizungskachelHTML extends IPSModule
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
             .wave-anim-mask { animation: waveSlideMask 6s linear infinite; }
 
-            /* CSS für das optimierte Drop-Up Menü (öffnet nach oben + Grid-Layout) */
+            /* CSS für das Drop-Up Menü */
             .custom-dropdown {
                 position: relative;
                 display: inline-block;
@@ -338,24 +337,38 @@ class HeizungskachelHTML extends IPSModule
             .dropdown-arrow { margin-left: auto; font-size: 12px; color: #7f8c8d; }
             
             .dropdown-menu {
-                display: none;
+                /* Sichtbarkeit statt display:none zur Steuerung nutzen */
+                display: grid; 
+                grid-template-columns: 1fr 1fr;
+                visibility: hidden;
+                opacity: 0;
+                
+                /* DER TRICK FÜR MAUS-NUTZER: 0.6s Zeitverzögerung bevor es sich schließt! */
+                transition: opacity 0.2s ease, visibility 0.2s ease;
+                transition-delay: 0.6s; 
+                
                 position: absolute;
-                bottom: 100%; /* NACH OBEN AUFKLAPPEN! Verhindert das Abschneiden unten. */
+                bottom: 100%; 
                 left: 0;
                 width: 100%;
                 background-color: white;
-                box-shadow: 0px -8px 20px 0px rgba(0,0,0,0.2); /* Schatten nach oben */
+                box-shadow: 0px -8px 20px 0px rgba(0,0,0,0.2); 
                 z-index: 1000;
                 border-radius: 8px;
                 border: 1px solid #bdc3c7;
-                margin-bottom: 5px; /* Abstand zum Schalter */
+                margin-bottom: 5px; 
                 max-height: 250px;
-                overflow-y: auto; /* Fallback: Intern scrollbar, falls es immer noch klemmt */
+                overflow-y: auto; 
             }
+            
+            /* Wenn der Mauszeiger im Container ist */
             .custom-dropdown:hover .dropdown-menu {
-                display: grid; /* ALS RASTER ANZEIGEN! Das halbiert die Höhe extrem! */
-                grid-template-columns: 1fr 1fr;
+                visibility: visible;
+                opacity: 1;
+                /* Beim Einblenden keine Zeitverzögerung */
+                transition-delay: 0s; 
             }
+
             .dropdown-item {
                 padding: 10px 10px;
                 cursor: pointer;
@@ -370,7 +383,6 @@ class HeizungskachelHTML extends IPSModule
                 background-color: white;
                 transition: background-color 0.1s;
             }
-            /* Optik im Grid aufräumen */
             .dropdown-item:nth-child(even) { border-right: none; }
             .dropdown-item:hover { background-color: #f1f2f6; }
             
@@ -477,6 +489,7 @@ class HeizungskachelHTML extends IPSModule
 
                 if(data.circuits) {
                     data.circuits.forEach(function(c) {
+                        // Temp & Pumpe Update
                         setText('val_temp_' + c.id, fmt(c.temp));
                         setText('detail_temp_' + c.id, fmt(c.temp) + " °C");
                         
@@ -492,6 +505,7 @@ class HeizungskachelHTML extends IPSModule
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
+                        // MODUS Update
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
