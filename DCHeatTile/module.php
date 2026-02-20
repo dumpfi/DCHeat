@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 class HeizungskachelHTML extends IPSModule
 {
-    // Die Definition der Modi. 
-    // WICHTIG: Falls Ihre IPS-Variable andere Zahlenwerte nutzt, 
-    // passen Sie diese Zahlen (0,1,2,3,4,5) einfach an.
+    // Bezeichnungen der Betriebsmodi
     private $hkModes = [
         0 => "Aus",
         1 => "Auto",
@@ -14,6 +12,16 @@ class HeizungskachelHTML extends IPSModule
         3 => "Heizen",
         4 => "1xHeizen",
         5 => "Kühlen"
+    ];
+
+    // Passende Icons für die Betriebsmodi (als direkte SVG-Strings für HTML)
+    private $hkIcons = [
+        0 => '<svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M12 2v10m-7.07-2.93a10 10 0 1014.14 0" stroke-linecap="round"/></svg>', // Power (Rot)
+        1 => '<svg viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg>', // Uhr (Blau)
+        2 => '<svg viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke-linejoin="round"/></svg>', // Mond (Lila)
+        3 => '<svg viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>', // Sonne (Gelb)
+        4 => '<svg viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2"><path d="M12 2c0 0-5 6-5 11a5 5 0 0010 0c0-5-5-11-5-11z" stroke-linejoin="round"/></svg>', // Flamme (Orange)
+        5 => '<svg viewBox="0 0 24 24" fill="none" stroke="#00cec9" stroke-width="2"><path d="M17.5 19.5L12 12m0 0L6.5 4.5M12 12l5.5-7.5M12 12L6.5 19.5M4 12h16M12 4v16" stroke-linecap="round" stroke-linejoin="round"/></svg>' // Schneeflocke (Türkis)
     ];
 
     public function Create()
@@ -32,7 +40,7 @@ class HeizungskachelHTML extends IPSModule
             $this->RegisterPropertyString("C{$i}_Name", "HK $i");
             $this->RegisterPropertyInteger("C{$i}_State", 0);
             $this->RegisterPropertyInteger("C{$i}_Temp", 0);
-            $this->RegisterPropertyInteger("C{$i}_Mode", 0); // NEU: Betriebsmodus
+            $this->RegisterPropertyInteger("C{$i}_Mode", 0);
         }
 
         $this->SetVisualizationType(1);
@@ -101,7 +109,6 @@ class HeizungskachelHTML extends IPSModule
                     'id' => $i,
                     'state' => GetValue($idState),
                     'temp' => $getVal("C{$i}_Temp"),
-                    // Wenn eine Variable verknüpft ist, senden wir den Wert, sonst -1
                     'mode' => ($idMode > 0 && IPS_VariableExists($idMode)) ? GetValue($idMode) : -1
                 ];
             }
@@ -174,38 +181,53 @@ class HeizungskachelHTML extends IPSModule
         }
 
         // -----------------------------------------------------------
-        // 2. MODALS GENERIEREN (HTML MIT BUTTONS)
+        // 2. MODALS GENERIEREN (MIT DROPDOWN)
         // -----------------------------------------------------------
         $modalsHTML = "";
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
             $modeVarId = $this->ReadPropertyInteger("C{$cIndex}_Mode");
             
-            // Buttons für die Betriebsmodi generieren
-            $buttonsHTML = "";
+            // Dropdown-Elemente (Die Liste zum Ausklappen) generieren
+            $dropdownItemsHTML = "";
             if ($modeVarId > 0) {
                 foreach($this->hkModes as $val => $label) {
-                    // WICHTIG: onclick ruft requestAction auf!
-                    $buttonsHTML .= '<div id="btn_mode_'.$cIndex.'_'.$val.'" class="mode-btn" onclick="requestAction('.$modeVarId.', '.$val.')">'.$label.'</div>';
+                    $icon = $this->hkIcons[$val];
+                    $dropdownItemsHTML .= '
+                    <div class="dropdown-item" onclick="requestAction('.$modeVarId.', '.$val.')">
+                        <span class="mode-icon">'.$icon.'</span> '.$label.'
+                    </div>';
                 }
             } else {
-                $buttonsHTML = '<div style="color: #7f8c8d; font-size: 12px; grid-column: 1 / -1;">Keine Modus-Variable verknüpft</div>';
+                $dropdownItemsHTML = '<div class="dropdown-item" style="color: #7f8c8d;">Keine Variable verknüpft</div>';
             }
 
             $modalsHTML .= '
             <div id="modal_circuit_'.$cIndex.'" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px; max-height: 450px;">
+                <div class="modal-content" style="max-width: 400px; max-height: 480px; overflow: visible;">
                     <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
-                    <div class="modal-body" style="text-align:center; padding-top:20px; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="modal-body" style="text-align:center; padding-top:20px; display: flex; flex-direction: column; justify-content: center; overflow: visible;">
                         <h2 style="color:#2c3e50; margin-bottom: 5px;">'.$name.'</h2>
                         
                         <div style="font-size: 40px; margin: 10px 0; color:#e67e22; font-weight: bold;" id="detail_temp_'.$cIndex.'">-- °C</div>
-                        <div id="detail_state_'.$cIndex.'" style="font-size: 18px; margin-bottom: 20px;">Status laden...</div>
+                        <div id="detail_state_'.$cIndex.'" style="font-size: 18px; margin-bottom: 30px;">Status laden...</div>
                         
-                        <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 10px;">Betriebsmodus</div>
-                        <div class="mode-grid">
-                            '.$buttonsHTML.'
+                        <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 5px;">Betriebsmodus</div>
+                        
+                        <div class="custom-dropdown">
+                            <div class="dropdown-trigger">
+                                <span id="current_icon_'.$cIndex.'" class="mode-icon">
+                                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#bdc3c7" stroke-width="2" fill="none"/></svg>
+                                </span>
+                                <span id="current_text_'.$cIndex.'">Laden...</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            
+                            <div class="dropdown-menu">
+                                '.$dropdownItemsHTML.'
+                            </div>
                         </div>
+
                     </div>
                 </div>
             </div>';
@@ -264,8 +286,9 @@ class HeizungskachelHTML extends IPSModule
 
         $popupBufferContent = $this->getBufferPopupSVG(); 
 
-        // Übergabe des PHP-Arrays an JavaScript
+        // Übergabe der PHP-Arrays an JavaScript (für Echtzeit-Updates der Icons und Texte)
         $modeMapJSON = json_encode($this->hkModes);
+        $iconMapJSON = json_encode($this->hkIcons);
 
         $html = <<<HTML
         <style>
@@ -274,11 +297,11 @@ class HeizungskachelHTML extends IPSModule
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
             
-            /* Modals */
+            /* Modals (Wichtig: overflow:visible damit Dropdown über den Rand darf) */
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             .close-btn { position: absolute; top: 5px; right: 10px; font-size: 30px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 200; }
-            .modal-body { flex: 1; padding: 5px; overflow: hidden; }
+            .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
             /* Animationen */
             @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -290,31 +313,82 @@ class HeizungskachelHTML extends IPSModule
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
             .wave-anim-mask { animation: waveSlideMask 6s linear infinite; }
 
-            /* CSS für das neue Schalter-Grid im Modal */
-            .mode-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 8px;
-                padding: 0 20px;
+            /* CSS für das Dropdown-Menü */
+            .custom-dropdown {
+                position: relative;
+                display: inline-block;
+                width: 250px;
+                margin: 0 auto;
+                text-align: left;
             }
-            .mode-btn {
+            .dropdown-trigger {
                 background: #ecf0f1;
                 border: 2px solid #bdc3c7;
                 border-radius: 8px;
-                padding: 12px 5px;
+                padding: 12px 15px;
                 color: #2c3e50;
                 font-weight: bold;
-                font-size: 13px;
+                font-size: 16px;
                 cursor: pointer;
-                transition: all 0.2s;
-                user-select: none;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: border-color 0.2s;
             }
-            .mode-btn:hover { background: #bdc3c7; }
-            .mode-btn.active {
-                background: #e67e22;
-                color: white;
-                border-color: #d35400;
-                box-shadow: 0 2px 5px rgba(230, 126, 34, 0.5);
+            .dropdown-trigger:hover {
+                border-color: #95a5a6;
+            }
+            .dropdown-arrow {
+                margin-left: auto;
+                font-size: 12px;
+                color: #7f8c8d;
+            }
+            .dropdown-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: white;
+                box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.2);
+                z-index: 1000;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid #bdc3c7;
+                margin-top: 5px;
+            }
+            /* Zeige das Menü bei Hover über das Container-Element */
+            .custom-dropdown:hover .dropdown-menu {
+                display: block;
+            }
+            .dropdown-item {
+                padding: 12px 15px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                border-bottom: 1px solid #ecf0f1;
+                color: #2c3e50;
+                font-weight: 500;
+                font-size: 15px;
+                background-color: white;
+                transition: background-color 0.1s;
+            }
+            .dropdown-item:last-child {
+                border-bottom: none;
+            }
+            .dropdown-item:hover {
+                background-color: #f1f2f6;
+            }
+            /* Icons einheitlich formatieren */
+            .mode-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .mode-icon svg {
+                width: 22px;
+                height: 22px;
             }
         </style>
         
@@ -324,7 +398,7 @@ class HeizungskachelHTML extends IPSModule
             <div id="modal_buffer" class="modal-overlay">
                 <div class="modal-content">
                     <div class="close-btn" onclick="closeModal('modal_buffer')">&times;</div>
-                    <div class="modal-body">$popupBufferContent</div>
+                    <div class="modal-body" style="overflow:hidden;">$popupBufferContent</div>
                 </div>
             </div>
             
@@ -344,7 +418,8 @@ class HeizungskachelHTML extends IPSModule
 
         <script>
             var initialData = $initialData;
-            var modeMap = $modeMapJSON; // Die PHP-Tabelle in JS laden
+            var modeMap = $modeMapJSON; 
+            var iconMap = $iconMapJSON; 
 
             setTimeout(function() { updateView(initialData); }, 50);
 
@@ -416,46 +491,36 @@ class HeizungskachelHTML extends IPSModule
 
                 if(data.circuits) {
                     data.circuits.forEach(function(c) {
-                        // Temp Update
+                        // Temp & Pumpe Update
                         setText('val_temp_' + c.id, fmt(c.temp));
                         setText('detail_temp_' + c.id, fmt(c.temp) + " °C");
                         
-                        // Pumpe Update
                         var isPumpOn = (c.state == true || c.state == 1);
                         var pumpIcon = document.getElementById('pump_icon_' + c.id);
                         var detailState = document.getElementById('detail_state_' + c.id);
                         
                         if(isPumpOn) {
-                            if(pumpIcon) { 
-                                pumpIcon.classList.remove('pump-inactive');
-                                pumpIcon.classList.add('pump-active'); 
-                            }
+                            if(pumpIcon) { pumpIcon.classList.remove('pump-inactive'); pumpIcon.classList.add('pump-active'); }
                             if(detailState) { detailState.innerText = "Pumpe LÄUFT"; detailState.style.color = "#27ae60"; }
                         } else {
-                            if(pumpIcon) { 
-                                pumpIcon.classList.remove('pump-active');
-                                pumpIcon.classList.add('pump-inactive'); 
-                            }
+                            if(pumpIcon) { pumpIcon.classList.remove('pump-active'); pumpIcon.classList.add('pump-inactive'); }
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
-                        // MODUS Update
+                        // MODUS Update (Text & Icon)
                         if(c.mode !== -1) {
-                            // Text in Übersicht setzen
                             var modeName = modeMap[c.mode] || "Unbekannt";
+                            var modeIcon = iconMap[c.mode] || "";
+
+                            // Aktualisiere kleinen Text in der SVG Übersicht
                             setText('main_mode_text_' + c.id, "Modus: " + modeName);
 
-                            // Active-Klasse auf den Buttons im Modal setzen
-                            for(var key in modeMap) {
-                                var btn = document.getElementById('btn_mode_' + c.id + '_' + key);
-                                if(btn) {
-                                    if(parseInt(key) === c.mode) {
-                                        btn.classList.add('active');
-                                    } else {
-                                        btn.classList.remove('active');
-                                    }
-                                }
-                            }
+                            // Aktualisiere das Haupt-Feld im Dropdown (Popup)
+                            var currentTextEl = document.getElementById('current_text_' + c.id);
+                            var currentIconEl = document.getElementById('current_icon_' + c.id);
+                            
+                            if(currentTextEl) currentTextEl.textContent = modeName;
+                            if(currentIconEl) currentIconEl.innerHTML = modeIcon;
                         }
                     });
                 }
