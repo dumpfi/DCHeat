@@ -1,69 +1,97 @@
 {
     "elements": [
-        { "type": "Label", "caption": "--- UMWELTDATEN ---" },
-        { "type": "SelectVariable", "name": "OutsideTemp", "caption": "Außentemperatur" },
-        { "type": "SelectVariable", "name": "AvgOutsideTemp", "caption": "Gemittelte Außentemperatur" },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Umweltdaten",
+            "items": [
+                { "type": "SelectVariable", "name": "OutsideTemp", "caption": "Außentemperatur" },
+                { "type": "SelectVariable", "name": "AvgOutsideTemp", "caption": "Gemittelte Außentemperatur" }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Puffer Speicher",
+            "items": [
+                { "type": "SelectVariable", "name": "SourceFill", "caption": "Füllstand (in %)" },
+                { "type": "SelectVariable", "name": "SourceBoiler", "caption": "Temperatur Oben (Warmwasser)" },
+                { "type": "SelectVariable", "name": "SourcePuffer3", "caption": "Temperatur Mitte Oben" },
+                { "type": "SelectVariable", "name": "SourcePuffer2", "caption": "Temperatur Mitte Unten" },
+                { "type": "SelectVariable", "name": "SourcePuffer1", "caption": "Temperatur Unten (Kaltwasser)" }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Wärmeerzeuger (Kessel)",
+            "items": [
+                { "type": "SelectVariable", "name": "Boiler_State", "caption": "Status Variable (Zahl)" },
+                { "type": "SelectVariable", "name": "Boiler_Temp", "caption": "Kessel Temperatur" }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Heizkreise (1-6)",
+            "items": [
+                { "type": "Label", "caption": "Hinweis: Nur Heizkreise mit ausgewählter Pumpen-Variable werden angezeigt." },
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
+                
+                { "type": "Label", "caption": "HEIZKREIS 1", "bold": true },
+                { "type": "ValidationTextBox", "name": "C1_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C1_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C1_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C1_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C1_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C1_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
 
-        { "type": "Label", "caption": "--- PUFFER SPEICHER ---" },
-        { "type": "SelectVariable", "name": "SourceFill", "caption": "Füllstand (in %)" },
-        { "type": "SelectVariable", "name": "SourceBoiler", "caption": "Temperatur Oben (Warmwasser)" },
-        { "type": "SelectVariable", "name": "SourcePuffer3", "caption": "Temperatur Mitte Oben" },
-        { "type": "SelectVariable", "name": "SourcePuffer2", "caption": "Temperatur Mitte Unten" },
-        { "type": "SelectVariable", "name": "SourcePuffer1", "caption": "Temperatur Unten (Kaltwasser)" },
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
 
-        { "type": "Label", "caption": "--- WÄRMEERZEUGER ---" },
-        { "type": "SelectVariable", "name": "Boiler_State", "caption": "Status Variable (Zahl)" },
-        { "type": "SelectVariable", "name": "Boiler_Temp", "caption": "Kessel Temperatur" },
+                { "type": "Label", "caption": "HEIZKREIS 2", "bold": true },
+                { "type": "ValidationTextBox", "name": "C2_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C2_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C2_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C2_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C2_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C2_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
 
-        { "type": "Label", "caption": "--- HEIZKREISE (Max 6) ---" },
-        { "type": "Label", "caption": "Hinweis: Nur Heizkreise mit ausgewählter Pumpen-Variable werden angezeigt." },
-        
-        { "type": "Label", "caption": "Heizkreis 1" },
-        { "type": "ValidationTextBox", "name": "C1_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C1_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C1_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C1_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C1_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C1_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
 
-        { "type": "Label", "caption": "Heizkreis 2" },
-        { "type": "ValidationTextBox", "name": "C2_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C2_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C2_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C2_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C2_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C2_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+                { "type": "Label", "caption": "HEIZKREIS 3", "bold": true },
+                { "type": "ValidationTextBox", "name": "C3_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C3_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C3_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C3_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C3_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C3_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
 
-        { "type": "Label", "caption": "Heizkreis 3" },
-        { "type": "ValidationTextBox", "name": "C3_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C3_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C3_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C3_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C3_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C3_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
 
-        { "type": "Label", "caption": "Heizkreis 4" },
-        { "type": "ValidationTextBox", "name": "C4_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C4_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C4_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C4_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C4_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C4_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+                { "type": "Label", "caption": "HEIZKREIS 4", "bold": true },
+                { "type": "ValidationTextBox", "name": "C4_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C4_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C4_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C4_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C4_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C4_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
 
-        { "type": "Label", "caption": "Heizkreis 5" },
-        { "type": "ValidationTextBox", "name": "C5_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C5_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C5_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C5_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C5_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C5_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
 
-        { "type": "Label", "caption": "Heizkreis 6" },
-        { "type": "ValidationTextBox", "name": "C6_Name", "caption": "Name" },
-        { "type": "SelectVariable", "name": "C6_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C6_TargetTemp", "caption": "Raum Soll-Temperatur" },
-        { "type": "SelectVariable", "name": "C6_Temp", "caption": "Vorlauf Temperatur" },
-        { "type": "SelectVariable", "name": "C6_Mode", "caption": "Wahl-Betriebsmodus" },
-        { "type": "SelectVariable", "name": "C6_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" }
+                { "type": "Label", "caption": "HEIZKREIS 5", "bold": true },
+                { "type": "ValidationTextBox", "name": "C5_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C5_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C5_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C5_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C5_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C5_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" },
+
+                { "type": "Label", "caption": "_________________________________________________________________________________" },
+
+                { "type": "Label", "caption": "HEIZKREIS 6", "bold": true },
+                { "type": "ValidationTextBox", "name": "C6_Name", "caption": "Name" },
+                { "type": "SelectVariable", "name": "C6_State", "caption": "Pumpe Status" },
+                { "type": "SelectVariable", "name": "C6_TargetTemp", "caption": "Raum Soll-Temperatur" },
+                { "type": "SelectVariable", "name": "C6_Temp", "caption": "Vorlauf Temperatur" },
+                { "type": "SelectVariable", "name": "C6_Mode", "caption": "Wahl-Betriebsmodus" },
+                { "type": "SelectVariable", "name": "C6_OpMode", "caption": "Aktueller Betriebsstatus (0-10)" }
+            ]
+        }
     ]
 }

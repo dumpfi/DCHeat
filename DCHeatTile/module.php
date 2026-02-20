@@ -194,9 +194,9 @@ class HeizungskachelHTML extends IPSModule
 
                 <text x="10" y="16" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
                 
-                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Soll: --</text>
+                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsmodus: --</text>
                 
-                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Modus: --</text>
+                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK Heizmodus: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
                     <circle cx="0" cy="0" r="18" stroke="white" stroke-width="2" fill="none"/>
