@@ -558,7 +558,7 @@ class HeizungskachelHTML extends IPSModule
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
 
-                            setText('main_mode_text_' + c.id, "HK Heizmodus: " + modeName);
+                            setText('main_mode_text_' + c.id, "Betriebsmodus: " + modeName);
 
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
