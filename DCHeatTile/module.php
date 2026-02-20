@@ -26,11 +26,9 @@ class HeizungskachelHTML extends IPSModule
     {
         parent::Create();
         
-        // Umweltdaten (Neu)
         $this->RegisterPropertyInteger("OutsideTemp", 0);
         $this->RegisterPropertyInteger("AvgOutsideTemp", 0);
 
-        // Puffer & Kessel
         $this->RegisterPropertyInteger("SourceFill", 0);       
         $this->RegisterPropertyInteger("SourceBoiler", 0);     
         $this->RegisterPropertyInteger("SourcePuffer3", 0);    
@@ -42,7 +40,8 @@ class HeizungskachelHTML extends IPSModule
         for($i=1; $i<=6; $i++) {
             $this->RegisterPropertyString("C{$i}_Name", "HK $i");
             $this->RegisterPropertyInteger("C{$i}_State", 0);
-            $this->RegisterPropertyInteger("C{$i}_Temp", 0);
+            $this->RegisterPropertyInteger("C{$i}_TargetTemp", 0); // NEU: Raumsoll
+            $this->RegisterPropertyInteger("C{$i}_Temp", 0);       // Vorlauf
             $this->RegisterPropertyInteger("C{$i}_Mode", 0);
         }
 
@@ -60,13 +59,14 @@ class HeizungskachelHTML extends IPSModule
         }
 
         $vars = [
-            "OutsideTemp", "AvgOutsideTemp", // Neu hinzugefügt
+            "OutsideTemp", "AvgOutsideTemp", 
             "SourceFill", "SourceBoiler", "SourcePuffer3", "SourcePuffer2", "SourcePuffer1",
             "Boiler_State", "Boiler_Temp"
         ];
 
         for($i=1; $i<=6; $i++) {
             $vars[] = "C{$i}_State";
+            $vars[] = "C{$i}_TargetTemp"; // NEU
             $vars[] = "C{$i}_Temp";
             $vars[] = "C{$i}_Mode";
         }
@@ -95,10 +95,8 @@ class HeizungskachelHTML extends IPSModule
         };
 
         $data = [
-            // Neu: Außentemperaturen
             't_out'     => $getVal("OutsideTemp"),
             't_out_avg' => $getVal("AvgOutsideTemp"),
-
             'fill'    => $getVal("SourceFill"),
             't_boil'  => $getVal("SourceBoiler"),
             't_p3'    => $getVal("SourcePuffer3"), 
@@ -116,7 +114,8 @@ class HeizungskachelHTML extends IPSModule
                 $circuits[] = [
                     'id' => $i,
                     'state' => GetValue($idState),
-                    'temp' => $getVal("C{$i}_Temp"),
+                    'target_temp' => $getVal("C{$i}_TargetTemp"), // NEU: Raumsoll
+                    'temp' => $getVal("C{$i}_Temp"),              // Vorlauf
                     'mode' => ($idMode > 0 && IPS_VariableExists($idMode)) ? GetValue($idMode) : -1
                 ];
             }
@@ -174,6 +173,7 @@ class HeizungskachelHTML extends IPSModule
                 <line x1="-40" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
 
                 <text x="10" y="20" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
+                
                 <text id="main_mode_text_'.$cIndex.'" x="10" y="38" style="fill: #e67e22; font-family: Arial; font-size: 11px; opacity: 0.8;">Modus: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
@@ -182,13 +182,13 @@ class HeizungskachelHTML extends IPSModule
                 </g>
 
                 <text x="10" y="'.($blockHeight - 10).'" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 18px;">
-                    <tspan id="val_temp_'.$cIndex.'">--</tspan> °C
+                    <tspan id="val_target_temp_'.$cIndex.'">--</tspan> °C
                 </text>
             </g>';
         }
 
         // -----------------------------------------------------------
-        // 2. MODALS GENERIEREN
+        // 2. MODALS GENERIEREN (KOMPAKTES DROP-UP MENÜ)
         // -----------------------------------------------------------
         $modalsHTML = "";
         foreach($configuredCircuits as $cIndex) {
@@ -208,16 +208,27 @@ class HeizungskachelHTML extends IPSModule
                 $dropdownItemsHTML = '<div class="dropdown-item" style="color: #7f8c8d; grid-column: span 2; text-align: center;">Keine Variable verknüpft</div>';
             }
 
+            // NEUES POPUP LAYOUT
             $modalsHTML .= '
             <div id="modal_circuit_'.$cIndex.'" class="modal-overlay">
                 <div class="modal-content" style="max-width: 400px; max-height: 480px;">
                     <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
-                    <div class="modal-body" style="text-align:center; padding-top:30px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
+                    <div class="modal-body" style="text-align:center; padding-top:25px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
                         
                         <div>
                             <h2 style="color:#2c3e50; margin-bottom: 5px;">'.$name.'</h2>
-                            <div style="font-size: 40px; margin: 10px 0; color:#e67e22; font-weight: bold;" id="detail_temp_'.$cIndex.'">-- °C</div>
-                            <div id="detail_state_'.$cIndex.'" style="font-size: 18px; margin-bottom: 20px;">Status laden...</div>
+                            
+                            <div id="detail_state_'.$cIndex.'" style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">Status laden...</div>
+                            
+                            <div style="font-size: 36px; margin: 10px 0; color:#e67e22; font-weight: bold;">
+                                <span id="detail_target_temp_'.$cIndex.'">--</span> °C
+                                <div style="font-size: 14px; font-weight: normal; color: #7f8c8d; margin-top: -5px;">Raum-Soll</div>
+                            </div>
+
+                            <div style="font-size: 24px; margin: 15px 0; color:#3498db; font-weight: bold;">
+                                <span id="detail_flow_temp_'.$cIndex.'">--</span> °C
+                                <div style="font-size: 12px; font-weight: normal; color: #7f8c8d; margin-top: -2px;">Vorlauf</div>
+                            </div>
                         </div>
                         
                         <div style="margin-bottom: 20px;">
@@ -436,7 +447,6 @@ class HeizungskachelHTML extends IPSModule
             function updateView(data) {
                 if (!data) return;
 
-                // Neu: Umweltdaten updaten
                 if(data.t_out !== undefined) {
                     setText('main_out_temp', fmt(data.t_out));
                 }
@@ -504,8 +514,10 @@ class HeizungskachelHTML extends IPSModule
 
                 if(data.circuits) {
                     data.circuits.forEach(function(c) {
-                        setText('val_temp_' + c.id, fmt(c.temp));
-                        setText('detail_temp_' + c.id, fmt(c.temp) + " °C");
+                        // Neue Logik: Sollraumtemperatur in Übersicht und Modal, Vorlauf nur im Modal
+                        setText('val_target_temp_' + c.id, fmt(c.target_temp));
+                        setText('detail_target_temp_' + c.id, fmt(c.target_temp));
+                        setText('detail_flow_temp_' + c.id, fmt(c.temp));
                         
                         var isPumpOn = (c.state == true || c.state == 1);
                         var pumpIcon = document.getElementById('pump_icon_' + c.id);
