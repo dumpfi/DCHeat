@@ -558,7 +558,7 @@ class HeizungskachelHTML extends IPSModule
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
 
-                            setText('main_mode_text_' + c.id, "Soll: " + modeName);
+                            setText('main_mode_text_' + c.id, "HK Heizmodus: " + modeName);
 
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
@@ -570,7 +570,7 @@ class HeizungskachelHTML extends IPSModule
                         // NEU: Aktueller Status (Ist)
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
-                            setText('main_opmode_text_' + c.id, "Modus: " + opModeName);
+                            setText('main_opmode_text_' + c.id, "HK Heizmodus: " + opModeName);
                         }
                     });
                 }
