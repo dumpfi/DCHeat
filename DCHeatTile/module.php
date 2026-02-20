@@ -196,7 +196,7 @@ class HeizungskachelHTML extends IPSModule
                 
                 <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsmodus: --</text>
                 
-                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK Heizmodus: --</text>
+                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK Status: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
                     <circle cx="0" cy="0" r="18" stroke="white" stroke-width="2" fill="none"/>
@@ -570,7 +570,7 @@ class HeizungskachelHTML extends IPSModule
                         // NEU: Aktueller Status (Ist)
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
-                            setText('main_opmode_text_' + c.id, "HK Heizmodus: " + opModeName);
+                            setText('main_opmode_text_' + c.id, "HK Status: " + opModeName);
                         }
                     });
                 }
