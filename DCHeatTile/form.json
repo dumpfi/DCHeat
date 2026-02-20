@@ -18,30 +18,36 @@
         { "type": "ValidationTextBox", "name": "C1_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C1_State", "caption": "Pumpe Status" },
         { "type": "SelectVariable", "name": "C1_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C1_Mode", "caption": "Betriebsmodus" },
 
         { "type": "Label", "caption": "Heizkreis 2" },
         { "type": "ValidationTextBox", "name": "C2_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C2_State", "caption": "Pumpe Status" },
         { "type": "SelectVariable", "name": "C2_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C2_Mode", "caption": "Betriebsmodus" },
 
         { "type": "Label", "caption": "Heizkreis 3" },
         { "type": "ValidationTextBox", "name": "C3_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C3_State", "caption": "Pumpe Status" },
         { "type": "SelectVariable", "name": "C3_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C3_Mode", "caption": "Betriebsmodus" },
 
         { "type": "Label", "caption": "Heizkreis 4" },
         { "type": "ValidationTextBox", "name": "C4_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C4_State", "caption": "Pumpe Status" },
         { "type": "SelectVariable", "name": "C4_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C4_Mode", "caption": "Betriebsmodus" },
 
         { "type": "Label", "caption": "Heizkreis 5" },
         { "type": "ValidationTextBox", "name": "C5_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C5_State", "caption": "Pumpe Status" },
         { "type": "SelectVariable", "name": "C5_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C5_Mode", "caption": "Betriebsmodus" },
 
         { "type": "Label", "caption": "Heizkreis 6" },
         { "type": "ValidationTextBox", "name": "C6_Name", "caption": "Name" },
         { "type": "SelectVariable", "name": "C6_State", "caption": "Pumpe Status" },
-        { "type": "SelectVariable", "name": "C6_Temp", "caption": "Vorlauf Temp" }
+        { "type": "SelectVariable", "name": "C6_Temp", "caption": "Vorlauf Temp" },
+        { "type": "SelectVariable", "name": "C6_Mode", "caption": "Betriebsmodus" }
     ]
 }

@@ -4,6 +4,18 @@ declare(strict_types=1);
 
 class HeizungskachelHTML extends IPSModule
 {
+    // Die Definition der Modi. 
+    // WICHTIG: Falls Ihre IPS-Variable andere Zahlenwerte nutzt, 
+    // passen Sie diese Zahlen (0,1,2,3,4,5) einfach an.
+    private $hkModes = [
+        0 => "Aus",
+        1 => "Auto",
+        2 => "Absenken",
+        3 => "Heizen",
+        4 => "1xHeizen",
+        5 => "Kühlen"
+    ];
+
     public function Create()
     {
         parent::Create();
@@ -20,6 +32,7 @@ class HeizungskachelHTML extends IPSModule
             $this->RegisterPropertyString("C{$i}_Name", "HK $i");
             $this->RegisterPropertyInteger("C{$i}_State", 0);
             $this->RegisterPropertyInteger("C{$i}_Temp", 0);
+            $this->RegisterPropertyInteger("C{$i}_Mode", 0); // NEU: Betriebsmodus
         }
 
         $this->SetVisualizationType(1);
@@ -43,6 +56,7 @@ class HeizungskachelHTML extends IPSModule
         for($i=1; $i<=6; $i++) {
             $vars[] = "C{$i}_State";
             $vars[] = "C{$i}_Temp";
+            $vars[] = "C{$i}_Mode";
         }
 
         foreach ($vars as $prop) {
@@ -82,10 +96,13 @@ class HeizungskachelHTML extends IPSModule
         for($i=1; $i<=6; $i++) {
             $idState = $this->ReadPropertyInteger("C{$i}_State");
             if($idState > 0 && IPS_VariableExists($idState)) {
+                $idMode = $this->ReadPropertyInteger("C{$i}_Mode");
                 $circuits[] = [
                     'id' => $i,
                     'state' => GetValue($idState),
-                    'temp' => $getVal("C{$i}_Temp")
+                    'temp' => $getVal("C{$i}_Temp"),
+                    // Wenn eine Variable verknüpft ist, senden wir den Wert, sonst -1
+                    'mode' => ($idMode > 0 && IPS_VariableExists($idMode)) ? GetValue($idMode) : -1
                 ];
             }
         }
@@ -99,7 +116,7 @@ class HeizungskachelHTML extends IPSModule
         $initialData = $this->GetAllValuesAsJSON();
 
         // -----------------------------------------------------------
-        // 1. DYNAMISCHE HEIZKREIS GENERIERUNG
+        // 1. DYNAMISCHE HEIZKREIS GENERIERUNG (SVG)
         // -----------------------------------------------------------
         $hkSVG = "";
         $configuredCircuits = [];
@@ -114,28 +131,19 @@ class HeizungskachelHTML extends IPSModule
         $blockHeight = ($count > 4) ? 70 : 90; 
         $gap = 10;
 
-        // --- ROHR-LOGIK (KORRIGIERT: OBEN UND UNTEN) ---
         if ($count > 0) {
-            // 1. Zuleitungen vom Puffer zum Verteilerbalken (Horizontal)
             $hkSVG .= '<path d="M 470 200 L 580 200" stroke="#e74c3c" stroke-width="8" fill="none" />';
             $hkSVG .= '<path d="M 470 300 L 560 300" stroke="#3498db" stroke-width="8" fill="none" />';
 
-            // 2. Berechnung der vertikalen Ausdehnung
-            // Oberster Punkt (Anschluss am 1. Heizkreis)
             $yTopRed  = $startY + ($blockHeight/2) - 10;
             $yTopBlue = $startY + ($blockHeight/2) + 20;
 
-            // Unterster Punkt (Anschluss am letzten Heizkreis)
-            // Index des letzten Elements ist count-1
             $yBottomIndex = $count - 1;
             $yBottomBase  = $startY + ($yBottomIndex * ($blockHeight + $gap));
             $yBotRed      = $yBottomBase + ($blockHeight/2) - 10;
             $yBotBlue     = $yBottomBase + ($blockHeight/2) + 20;
 
-            // 3. Zeichnen der vertikalen Verteilerbalken (Von ganz oben bis ganz unten)
-            // Rotes Vertikalrohr (x=580)
             $hkSVG .= '<path d="M 580 '.$yTopRed.' L 580 '.$yBotRed.'" stroke="#e74c3c" stroke-width="8" fill="none" />';
-            // Blaues Vertikalrohr (x=560)
             $hkSVG .= '<path d="M 560 '.$yTopBlue.' L 560 '.$yBotBlue.'" stroke="#3498db" stroke-width="8" fill="none" />';
         }
 
@@ -152,6 +160,8 @@ class HeizungskachelHTML extends IPSModule
 
                 <text x="10" y="20" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
                 
+                <text id="main_mode_text_'.$cIndex.'" x="10" y="38" style="fill: #e67e22; font-family: Arial; font-size: 11px; opacity: 0.8;">Modus: --</text>
+                
                 <g transform="translate(150, '.($blockHeight/2).')">
                     <circle cx="0" cy="0" r="18" stroke="white" stroke-width="2" fill="none"/>
                     <path id="pump_icon_'.$cIndex.'" d="M 0 0 L 12 -8 L 12 8 Z" fill="white" transform-origin="0 0" />
@@ -164,19 +174,38 @@ class HeizungskachelHTML extends IPSModule
         }
 
         // -----------------------------------------------------------
-        // 2. MODALS GENERIEREN
+        // 2. MODALS GENERIEREN (HTML MIT BUTTONS)
         // -----------------------------------------------------------
         $modalsHTML = "";
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
+            $modeVarId = $this->ReadPropertyInteger("C{$cIndex}_Mode");
+            
+            // Buttons für die Betriebsmodi generieren
+            $buttonsHTML = "";
+            if ($modeVarId > 0) {
+                foreach($this->hkModes as $val => $label) {
+                    // WICHTIG: onclick ruft requestAction auf!
+                    $buttonsHTML .= '<div id="btn_mode_'.$cIndex.'_'.$val.'" class="mode-btn" onclick="requestAction('.$modeVarId.', '.$val.')">'.$label.'</div>';
+                }
+            } else {
+                $buttonsHTML = '<div style="color: #7f8c8d; font-size: 12px; grid-column: 1 / -1;">Keine Modus-Variable verknüpft</div>';
+            }
+
             $modalsHTML .= '
             <div id="modal_circuit_'.$cIndex.'" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px; max-height: 300px;">
+                <div class="modal-content" style="max-width: 400px; max-height: 450px;">
                     <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
-                    <div class="modal-body" style="text-align:center; padding-top:40px;">
-                        <h2 style="color:#2c3e50">'.$name.'</h2>
-                        <div style="font-size: 40px; margin: 20px 0; color:#e67e22;" id="detail_temp_'.$cIndex.'">-- °C</div>
-                        <div id="detail_state_'.$cIndex.'" style="font-size: 20px;">Status laden...</div>
+                    <div class="modal-body" style="text-align:center; padding-top:20px; display: flex; flex-direction: column; justify-content: center;">
+                        <h2 style="color:#2c3e50; margin-bottom: 5px;">'.$name.'</h2>
+                        
+                        <div style="font-size: 40px; margin: 10px 0; color:#e67e22; font-weight: bold;" id="detail_temp_'.$cIndex.'">-- °C</div>
+                        <div id="detail_state_'.$cIndex.'" style="font-size: 18px; margin-bottom: 20px;">Status laden...</div>
+                        
+                        <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 10px;">Betriebsmodus</div>
+                        <div class="mode-grid">
+                            '.$buttonsHTML.'
+                        </div>
                     </div>
                 </div>
             </div>';
@@ -202,7 +231,6 @@ class HeizungskachelHTML extends IPSModule
             </defs>
 
             <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
-            
             <path d="M 470 200 L 480 200" stroke="#e74c3c" stroke-width="8" /> 
             <path d="M 470 300 L 480 300" stroke="#3498db" stroke-width="8" /> 
 
@@ -236,16 +264,23 @@ class HeizungskachelHTML extends IPSModule
 
         $popupBufferContent = $this->getBufferPopupSVG(); 
 
+        // Übergabe des PHP-Arrays an JavaScript
+        $modeMapJSON = json_encode($this->hkModes);
+
         $html = <<<HTML
         <style>
             :root { --fill-val: 0; } 
             .visu-container { position: relative; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; background: #ecf0f1; }
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
+            
+            /* Modals */
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             .close-btn { position: absolute; top: 5px; right: 10px; font-size: 30px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 200; }
             .modal-body { flex: 1; padding: 5px; overflow: hidden; }
+            
+            /* Animationen */
             @keyframes spin { 100% { transform: rotate(360deg); } }
             .pump-active { animation: spin 1s linear infinite; fill: #2ecc71 !important; }
             .pump-inactive { fill: white !important; }
@@ -254,6 +289,33 @@ class HeizungskachelHTML extends IPSModule
             .blink-active { animation: blink 1s infinite; opacity: 1 !important; }
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
             .wave-anim-mask { animation: waveSlideMask 6s linear infinite; }
+
+            /* CSS für das neue Schalter-Grid im Modal */
+            .mode-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 8px;
+                padding: 0 20px;
+            }
+            .mode-btn {
+                background: #ecf0f1;
+                border: 2px solid #bdc3c7;
+                border-radius: 8px;
+                padding: 12px 5px;
+                color: #2c3e50;
+                font-weight: bold;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s;
+                user-select: none;
+            }
+            .mode-btn:hover { background: #bdc3c7; }
+            .mode-btn.active {
+                background: #e67e22;
+                color: white;
+                border-color: #d35400;
+                box-shadow: 0 2px 5px rgba(230, 126, 34, 0.5);
+            }
         </style>
         
         <div class="visu-container">
@@ -282,11 +344,15 @@ class HeizungskachelHTML extends IPSModule
 
         <script>
             var initialData = $initialData;
+            var modeMap = $modeMapJSON; // Die PHP-Tabelle in JS laden
+
             setTimeout(function() { updateView(initialData); }, 50);
+
             function handleMessage(data) {
                 var jsonObj = JSON.parse(data);
                 updateView(jsonObj);
             }
+
             function updateView(data) {
                 if (!data) return;
                 
@@ -350,9 +416,11 @@ class HeizungskachelHTML extends IPSModule
 
                 if(data.circuits) {
                     data.circuits.forEach(function(c) {
+                        // Temp Update
                         setText('val_temp_' + c.id, fmt(c.temp));
                         setText('detail_temp_' + c.id, fmt(c.temp) + " °C");
                         
+                        // Pumpe Update
                         var isPumpOn = (c.state == true || c.state == 1);
                         var pumpIcon = document.getElementById('pump_icon_' + c.id);
                         var detailState = document.getElementById('detail_state_' + c.id);
@@ -369,6 +437,25 @@ class HeizungskachelHTML extends IPSModule
                                 pumpIcon.classList.add('pump-inactive'); 
                             }
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
+                        }
+
+                        // MODUS Update
+                        if(c.mode !== -1) {
+                            // Text in Übersicht setzen
+                            var modeName = modeMap[c.mode] || "Unbekannt";
+                            setText('main_mode_text_' + c.id, "Modus: " + modeName);
+
+                            // Active-Klasse auf den Buttons im Modal setzen
+                            for(var key in modeMap) {
+                                var btn = document.getElementById('btn_mode_' + c.id + '_' + key);
+                                if(btn) {
+                                    if(parseInt(key) === c.mode) {
+                                        btn.classList.add('active');
+                                    } else {
+                                        btn.classList.remove('active');
+                                    }
+                                }
+                            }
                         }
                     });
                 }
