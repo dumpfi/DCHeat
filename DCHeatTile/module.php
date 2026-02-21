@@ -233,6 +233,10 @@ class HeizungskachelHTML extends IPSModule
         // 2. MODALS GENERIEREN
         // -----------------------------------------------------------
         $modalsHTML = "";
+        
+        // DAS NEUE Vektor-X (SVG), das überall gleich aussieht
+        $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
             $modeVarId = $this->ReadPropertyInteger("C{$cIndex}_Mode");
@@ -253,7 +257,11 @@ class HeizungskachelHTML extends IPSModule
             $modalsHTML .= '
             <div id="modal_circuit_'.$cIndex.'" class="modal-overlay" onclick="closeModal(\'modal_circuit_'.$cIndex.'\', event)">
                 <div class="modal-content" style="max-width: 420px; max-height: 550px;" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\', event)">&times;</div>
+                    
+                    <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\', event)">
+                        '.$svgCloseIcon.'
+                    </div>
+
                     <div class="modal-body" style="text-align:center; padding: 25px 15px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
                         
                         <div>
@@ -417,23 +425,25 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* MASSIVES UPGRADE DER HITBOX: Feste 50x50 Box, Inhalt zentriert, kann nicht verfehlt werden */
+            /* NEUE SVG BUTTON CSS: Absolut sauber zentriert und antippbar */
             .close-btn { 
                 position: absolute; 
-                top: 0px; 
-                right: 0px; 
-                width: 50px; 
-                height: 50px; 
+                top: 8px; 
+                right: 8px; 
+                width: 44px; 
+                height: 44px; 
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 36px; 
-                line-height: 1;
-                font-weight: bold; 
                 color: #e74c3c; 
                 cursor: pointer; 
                 z-index: 200; 
+                border-radius: 50%;
+                background-color: transparent;
+                transition: background-color 0.2s;
             }
+            .close-btn:active { background-color: #f1f2f6; }
+            .close-btn svg { width: 28px; height: 28px; }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
@@ -470,14 +480,14 @@ class HeizungskachelHTML extends IPSModule
             
             <div id="modal_buffer" class="modal-overlay" onclick="closeModal('modal_buffer', event)">
                 <div class="modal-content" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal('modal_buffer', event)">&times;</div>
+                    <div class="close-btn" onclick="closeModal('modal_buffer', event)">$svgCloseIcon</div>
                     <div class="modal-body" style="overflow:hidden;">$popupBufferContent</div>
                 </div>
             </div>
             
             <div id="modal_boiler" class="modal-overlay" onclick="closeModal('modal_boiler', event)">
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal('modal_boiler', event)">&times;</div>
+                    <div class="close-btn" onclick="closeModal('modal_boiler', event)">$svgCloseIcon</div>
                     <div class="modal-body" style="text-align:center; padding-top:40px;">
                         <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 10px 0;">Kessel Status</div>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
@@ -515,7 +525,6 @@ class HeizungskachelHTML extends IPSModule
                 }
             }
 
-            // NEU: event Variable übergeben, damit das Stoppen der Weiterleitung klappt
             function closeModal(id, e) { 
                 if (e) stopProp(e);
                 document.getElementById(id).style.display = 'none'; 
