@@ -24,7 +24,8 @@
             "caption": "Wärmeerzeuger (Kessel)",
             "items": [
                 { "type": "SelectVariable", "name": "Boiler_State", "caption": "Status Variable (Zahl)" },
-                { "type": "SelectVariable", "name": "Boiler_Temp", "caption": "Kessel Temperatur" }
+                { "type": "SelectVariable", "name": "Boiler_Temp", "caption": "Kessel Temperatur" },
+                { "type": "SelectVariable", "name": "BufferPump_State", "caption": "Puffer Pumpe Status" }
             ]
         },
         {

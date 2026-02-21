@@ -50,6 +50,7 @@ class HeizungskachelHTML extends IPSModule
         $this->RegisterPropertyInteger("SourcePuffer1", 0);    
         $this->RegisterPropertyInteger("Boiler_State", 0);     
         $this->RegisterPropertyInteger("Boiler_Temp", 0);      
+        $this->RegisterPropertyInteger("BufferPump_State", 0); // NEU: Puffer Pumpe
 
         for($i=1; $i<=6; $i++) {
             $this->RegisterPropertyString("C{$i}_Name", "HK $i");
@@ -78,7 +79,7 @@ class HeizungskachelHTML extends IPSModule
         $vars = [
             "OutsideTemp", "AvgOutsideTemp", 
             "SourceFill", "SourceBoiler", "SourcePuffer3", "SourcePuffer2", "SourcePuffer1",
-            "Boiler_State", "Boiler_Temp"
+            "Boiler_State", "Boiler_Temp", "BufferPump_State" // Puffer Pumpe hinzugefügt
         ];
 
         for($i=1; $i<=6; $i++) {
@@ -141,6 +142,7 @@ class HeizungskachelHTML extends IPSModule
             't_p1'      => $getVal("SourcePuffer1"),
             'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
+            'buf_pump_state' => $getVal("BufferPump_State") // NEU
         ];
 
         $circuits = [];
@@ -359,7 +361,14 @@ class HeizungskachelHTML extends IPSModule
                 </text>
             </g>
 
-            <path d="M 220 250 L 350 250" stroke="#555" stroke-width="10" /> 
+            <path d="M 220 250 L 267 250" stroke="#555" stroke-width="10" /> 
+            <path d="M 303 250 L 350 250" stroke="#555" stroke-width="10" /> 
+
+            <g transform="translate(285, 250)">
+                <circle cx="0" cy="0" r="22" stroke="#555" stroke-width="4" fill="#34495e"/>
+                <path id="main_buf_pump_icon" d="M 0 0 L 12 -8 L 12 8 Z" fill="white" transform-origin="0 0" class="pump-inactive" />
+            </g>
+
             <path d="M 470 200 L 480 200" stroke="#e74c3c" stroke-width="8" /> 
             <path d="M 470 300 L 480 300" stroke="#3498db" stroke-width="8" /> 
 
@@ -425,7 +434,6 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* ABSOLUTE BRECHSTANGE: Die 55x55 Hitbox komplett getrennt vom optischen SVG */
             .close-btn { 
                 position: absolute; 
                 top: 0px; 
@@ -450,7 +458,6 @@ class HeizungskachelHTML extends IPSModule
                 display: block;
                 margin: 0;
                 padding: 0;
-                /* pointer-events: none sorgt dafür, dass das Icon keine Klicks stiehlt/verschiebt */
                 pointer-events: none; 
                 transition: transform 0.1s;
                 transform-origin: center;
@@ -637,6 +644,21 @@ class HeizungskachelHTML extends IPSModule
                     if(boilRect) boilRect.setAttribute("fill", bColor);
                     if(statusText) statusText.textContent = sText;
                     if(detState) { detState.textContent = sText; detState.style.color = sColor; }
+                }
+
+                // NEU: Puffer Pumpe Update
+                if(data.buf_pump_state !== undefined) {
+                    var isBufPumpOn = (data.buf_pump_state == true || data.buf_pump_state == 1);
+                    var bufPumpIcon = document.getElementById('main_buf_pump_icon');
+                    if (bufPumpIcon) {
+                        if (isBufPumpOn) {
+                            bufPumpIcon.classList.remove('pump-inactive');
+                            bufPumpIcon.classList.add('pump-active');
+                        } else {
+                            bufPumpIcon.classList.remove('pump-active');
+                            bufPumpIcon.classList.add('pump-inactive');
+                        }
+                    }
                 }
 
                 if(data.circuits) {
