@@ -340,7 +340,22 @@ class HeizungskachelHTML extends IPSModule
         $html = <<<HTML
         <style>
             :root { --fill-val: 0; } 
-            .visu-container { position: relative; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; background: #ecf0f1; }
+            .visu-container { 
+                position: relative; 
+                width: 100%; 
+                height: 100%; 
+                font-family: sans-serif; 
+                overflow: hidden; 
+                background: #ecf0f1; 
+                /* Verhindert automatische Text-Skalierung durch das Betriebssystem */
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+            .visu-container * {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+                box-sizing: border-box;
+            }
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
             
