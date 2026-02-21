@@ -234,8 +234,8 @@ class HeizungskachelHTML extends IPSModule
         // -----------------------------------------------------------
         $modalsHTML = "";
         
-        // Das Vektor-X (Koordinaten 4 bis 20 für ein schönes, großes X)
-        $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0; padding:0;"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="4" y1="20" x2="20" y2="4"></line></svg>';
+        // Das Vektor-X
+        $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="4" y1="20" x2="20" y2="4"></line></svg>';
 
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
@@ -425,27 +425,30 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* NEUES ALIGNMENT: flex-start und flex-end klebt das X perfekt in die Ecke */
+            /* NEUER ANSATZ FÜR DAS KREUZ: Hitbox und Icon komplett entkoppelt! */
             .close-btn { 
                 position: absolute; 
-                top: 0px; 
-                right: 0px; 
-                width: 50px; 
-                height: 50px; 
-                display: flex;
-                align-items: flex-start;  
-                justify-content: flex-end; 
-                padding: 12px; 
-                color: #e74c3c; 
+                top: 0; 
+                right: 0; 
+                width: 55px; 
+                height: 55px; 
                 cursor: pointer; 
                 z-index: 200; 
                 border-top-right-radius: 10px;
                 border-bottom-left-radius: 10px;
-                background-color: transparent;
-                transition: background-color 0.2s;
             }
-            .close-btn:active { background-color: #f1f2f6; }
-            .close-btn svg { width: 22px; height: 22px; }
+            .close-btn svg { 
+                position: absolute;
+                top: 12px; /* Zwingt das Kreuz exakt 12px von oben */
+                right: 12px; /* Zwingt das Kreuz exakt 12px von rechts */
+                width: 24px; 
+                height: 24px; 
+                color: #e74c3c;
+                transition: transform 0.1s;
+            }
+            .close-btn:active svg { 
+                transform: scale(0.85); /* Animation nur auf das Kreuz, nicht auf die Hitbox */
+            }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
