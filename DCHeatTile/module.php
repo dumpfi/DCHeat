@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 class HeizungskachelHTML extends IPSModule
 {
-    // Die Optionen für den Auswahl-Schalter (Dropdown)
     private $hkModes = [
         0 => "Aus",
         1 => "Auto",
@@ -14,7 +13,6 @@ class HeizungskachelHTML extends IPSModule
         5 => "Kühlen"
     ];
 
-    // Die tatsächlichen Betriebszustände (Anzeige Übersicht)
     private $opModes = [
         0 => "Aus",
         1 => "Heizen",
@@ -58,6 +56,8 @@ class HeizungskachelHTML extends IPSModule
             $this->RegisterPropertyInteger("C{$i}_State", 0);
             $this->RegisterPropertyInteger("C{$i}_TargetTemp", 0); 
             $this->RegisterPropertyInteger("C{$i}_Temp", 0);       
+            $this->RegisterPropertyInteger("C{$i}_DayTemp", 0);   // NEU
+            $this->RegisterPropertyInteger("C{$i}_NightTemp", 0); // NEU
             $this->RegisterPropertyInteger("C{$i}_Mode", 0);
             $this->RegisterPropertyInteger("C{$i}_OpMode", 0); 
         }
@@ -85,6 +85,8 @@ class HeizungskachelHTML extends IPSModule
             $vars[] = "C{$i}_State";
             $vars[] = "C{$i}_TargetTemp"; 
             $vars[] = "C{$i}_Temp";
+            $vars[] = "C{$i}_DayTemp";   // NEU
+            $vars[] = "C{$i}_NightTemp"; // NEU
             $vars[] = "C{$i}_Mode";
             $vars[] = "C{$i}_OpMode"; 
         }
@@ -97,11 +99,23 @@ class HeizungskachelHTML extends IPSModule
         }
     }
 
+    // -------------------------------------------------------------------------
+    // PHP Empfänger für Klicks & Slider
+    // -------------------------------------------------------------------------
     public function RequestAction($Ident, $Value)
     {
-        if (preg_match('/^C[1-6]_Mode$/', $Ident)) {
+        // Wir fangen Mode (Int) sowie DayTemp und NightTemp (Float) ab
+        if (preg_match('/^C[1-6]_(Mode|DayTemp|NightTemp)$/', $Ident)) {
             $varId = $this->ReadPropertyInteger($Ident);
             if ($varId > 0 && IPS_VariableExists($varId)) {
+                
+                // Float für Temperaturen erzwingen, Int für Modus
+                if (strpos($Ident, 'Temp') !== false) {
+                    $Value = (float)$Value;
+                } else {
+                    $Value = (int)$Value;
+                }
+                
                 RequestAction($varId, $Value);
             }
         }
@@ -125,11 +139,11 @@ class HeizungskachelHTML extends IPSModule
         $data = [
             't_out'     => $getVal("OutsideTemp"),
             't_out_avg' => $getVal("AvgOutsideTemp"),
-            'fill'    => $getVal("SourceFill"),
-            't_boil'  => $getVal("SourceBoiler"),
-            't_p3'    => $getVal("SourcePuffer3"), 
-            't_p2'    => $getVal("SourcePuffer2"),
-            't_p1'    => $getVal("SourcePuffer1"),
+            'fill'      => $getVal("SourceFill"),
+            't_boil'    => $getVal("SourceBoiler"),
+            't_p3'      => $getVal("SourcePuffer3"), 
+            't_p2'      => $getVal("SourcePuffer2"),
+            't_p1'      => $getVal("SourcePuffer1"),
             'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
         ];
@@ -140,11 +154,18 @@ class HeizungskachelHTML extends IPSModule
             if($idState > 0 && IPS_VariableExists($idState)) {
                 $idMode = $this->ReadPropertyInteger("C{$i}_Mode");
                 $idOpMode = $this->ReadPropertyInteger("C{$i}_OpMode");
+                
+                $idDayTemp = $this->ReadPropertyInteger("C{$i}_DayTemp");
+                $idNightTemp = $this->ReadPropertyInteger("C{$i}_NightTemp");
+
                 $circuits[] = [
                     'id' => $i,
                     'state' => GetValue($idState),
                     'target_temp' => $getVal("C{$i}_TargetTemp"),
-                    'temp' => $getVal("C{$i}_Temp"),              
+                    'temp' => $getVal("C{$i}_Temp"),   
+                    // Wenn konfiguriert, Wert auslesen, sonst -1 als "nicht vorhanden" Markierung
+                    'day_temp' => ($idDayTemp > 0 && IPS_VariableExists($idDayTemp)) ? GetValue($idDayTemp) : -1,
+                    'night_temp' => ($idNightTemp > 0 && IPS_VariableExists($idNightTemp)) ? GetValue($idNightTemp) : -1,           
                     'mode' => ($idMode > 0 && IPS_VariableExists($idMode)) ? GetValue($idMode) : -1,
                     'op_mode' => ($idOpMode > 0 && IPS_VariableExists($idOpMode)) ? GetValue($idOpMode) : -1
                 ];
@@ -218,13 +239,14 @@ class HeizungskachelHTML extends IPSModule
         }
 
         // -----------------------------------------------------------
-        // 2. MODALS GENERIEREN (KOMPAKTES DROP-UP MENÜ)
+        // 2. MODALS GENERIEREN (INKLUSIVE NEUER SLIDER-BOXEN)
         // -----------------------------------------------------------
         $modalsHTML = "";
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
             $modeVarId = $this->ReadPropertyInteger("C{$cIndex}_Mode");
             
+            // Dropdown HTML
             $dropdownItemsHTML = "";
             if ($modeVarId > 0) {
                 foreach($this->hkModes as $val => $label) {
@@ -238,11 +260,12 @@ class HeizungskachelHTML extends IPSModule
                 $dropdownItemsHTML = '<div class="dropdown-item" style="color: #7f8c8d; grid-column: span 2; text-align: center;">Keine Variable verknüpft</div>';
             }
 
+            // Neues Popup Design mit Slidern
             $modalsHTML .= '
-            <div id="modal_circuit_'.$cIndex.'" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px; max-height: 480px;">
+            <div id="modal_circuit_'.$cIndex.'" class="modal-overlay" onclick="closeAllSliders(event)">
+                <div class="modal-content" style="max-width: 420px; max-height: 550px;" onclick="event.stopPropagation()">
                     <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
-                    <div class="modal-body" style="text-align:center; padding-top:20px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
+                    <div class="modal-body" style="text-align:center; padding: 25px 15px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
                         
                         <div>
                             <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.2;">'.$name.'</div>
@@ -251,16 +274,48 @@ class HeizungskachelHTML extends IPSModule
                             
                             <div style="font-size: 36px; margin: 5px 0; color:#e67e22; font-weight: bold; line-height: 1;">
                                 <span id="detail_target_temp_'.$cIndex.'">--</span> °C
-                                <div style="font-size: 14px; font-weight: normal; color: #7f8c8d; margin-top: 2px;">Raum-Soll</div>
+                                <div style="font-size: 14px; font-weight: normal; color: #7f8c8d; margin-top: 2px;">Aktuelles Raum-Soll</div>
                             </div>
 
-                            <div style="font-size: 24px; margin: 15px 0; color:#3498db; font-weight: bold; line-height: 1;">
+                            <div style="font-size: 24px; margin: 15px 0 25px 0; color:#3498db; font-weight: bold; line-height: 1;">
                                 <span id="detail_flow_temp_'.$cIndex.'">--</span> °C
                                 <div style="font-size: 12px; font-weight: normal; color: #7f8c8d; margin-top: 2px;">Vorlauf</div>
                             </div>
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
+                        <div style="display: flex; gap: 15px; margin-bottom: 25px; justify-content: center;">
+                            
+                            <div class="temp-adjust-box">
+                                <div style="font-size: 12px; color: #7f8c8d; font-weight: bold;">Tag-Soll</div>
+                                <div class="clickable-temp" onclick="toggleSlider(\'slider_day_'.$cIndex.'\')">
+                                    <span id="detail_day_temp_'.$cIndex.'">--</span> °C
+                                </div>
+                                <div id="slider_day_'.$cIndex.'" class="slider-popup">
+                                    <div style="font-weight:bold; color:#2c3e50; margin-bottom: 10px;">Tagestemperatur</div>
+                                    <input type="range" min="15" max="30" step="0.5" id="input_day_'.$cIndex.'"
+                                           oninput="document.getElementById(\'slider_val_day_'.$cIndex.'\').innerText = parseFloat(this.value).toFixed(1) + \' °C\';"
+                                           onchange="requestAction(\'C'.$cIndex.'_DayTemp\', this.value); toggleSlider(\'slider_day_'.$cIndex.'\')">
+                                    <div id="slider_val_day_'.$cIndex.'" style="font-size:20px; color:#e67e22; font-weight:bold;">-- °C</div>
+                                </div>
+                            </div>
+
+                            <div class="temp-adjust-box">
+                                <div style="font-size: 12px; color: #7f8c8d; font-weight: bold;">Nacht-Soll</div>
+                                <div class="clickable-temp" style="color: #3498db;" onclick="toggleSlider(\'slider_night_'.$cIndex.'\')">
+                                    <span id="detail_night_temp_'.$cIndex.'">--</span> °C
+                                </div>
+                                <div id="slider_night_'.$cIndex.'" class="slider-popup">
+                                    <div style="font-weight:bold; color:#2c3e50; margin-bottom: 10px;">Absenktemperatur</div>
+                                    <input type="range" min="10" max="25" step="0.5" id="input_night_'.$cIndex.'"
+                                           oninput="document.getElementById(\'slider_val_night_'.$cIndex.'\').innerText = parseFloat(this.value).toFixed(1) + \' °C\';"
+                                           onchange="requestAction(\'C'.$cIndex.'_NightTemp\', this.value); toggleSlider(\'slider_night_'.$cIndex.'\')">
+                                    <div id="slider_val_night_'.$cIndex.'" style="font-size:20px; color:#3498db; font-weight:bold;">-- °C</div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
                             <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 5px;">Betriebsmodus</div>
                             <div class="custom-dropdown">
                                 <div class="dropdown-menu">
@@ -347,19 +402,17 @@ class HeizungskachelHTML extends IPSModule
 
         $html = <<<HTML
         <style>
-            /* WICHTIG: Body und HTML von Standard-Browser Rändern befreien! */
             html, body {
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
-                background-color: #ecf0f1; /* Erzwingt helle Grundfarbe auf allen Geräten */
+                background-color: #ecf0f1; 
                 -webkit-text-size-adjust: none !important;
                 text-size-adjust: none !important;
             }
 
-            /* Container und alle Kinder vor Font-Boosting schützen */
             * {
                 box-sizing: border-box;
                 -webkit-text-size-adjust: none !important;
@@ -368,15 +421,7 @@ class HeizungskachelHTML extends IPSModule
 
             :root { --fill-val: 0; } 
             
-            .visu-container { 
-                position: relative; 
-                width: 100%; 
-                height: 100%; 
-                font-family: sans-serif; 
-                overflow: hidden; 
-                background: #ecf0f1; 
-            }
-            
+            .visu-container { position: relative; width: 100%; height: 100%; font-family: sans-serif; overflow: hidden; background: #ecf0f1; }
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
             
@@ -394,90 +439,72 @@ class HeizungskachelHTML extends IPSModule
             @keyframes waveSlideMask { from { transform: translateX(0px); } to { transform: translateX(-240px); } }
             .wave-anim-mask { animation: waveSlideMask 6s linear infinite; }
 
-            .custom-dropdown {
-                position: relative;
-                display: inline-block;
-                width: 260px;
-                margin: 0 auto;
-                text-align: left;
-            }
-            .dropdown-trigger {
-                background: #ecf0f1;
-                border: 2px solid #bdc3c7;
-                border-radius: 8px;
-                padding: 12px 15px;
-                color: #2c3e50;
-                font-weight: bold;
-                font-size: 16px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                transition: border-color 0.2s;
-            }
+            /* CSS für das Drop-Up Menü */
+            .custom-dropdown { position: relative; display: inline-block; width: 260px; margin: 0 auto; text-align: left; }
+            .dropdown-trigger { background: #ecf0f1; border: 2px solid #bdc3c7; border-radius: 8px; padding: 12px 15px; color: #2c3e50; font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; }
             .dropdown-trigger:hover { border-color: #95a5a6; }
             .dropdown-arrow { margin-left: auto; font-size: 12px; color: #7f8c8d; }
-            
-            .dropdown-menu {
-                display: grid; 
-                grid-template-columns: 1fr 1fr;
-                visibility: hidden;
-                opacity: 0;
-                transition: opacity 0.2s ease, visibility 0.2s ease;
-                transition-delay: 0.6s; 
-                position: absolute;
-                bottom: 100%; 
-                left: 0;
-                width: 100%;
-                background-color: white;
-                box-shadow: 0px -8px 20px 0px rgba(0,0,0,0.2); 
-                z-index: 1000;
-                border-radius: 8px;
-                border: 1px solid #bdc3c7;
-                margin-bottom: 5px; 
-                max-height: 250px;
-                overflow-y: auto; 
-            }
-            
-            .custom-dropdown:hover .dropdown-menu {
-                visibility: visible;
-                opacity: 1;
-                transition-delay: 0s; 
-            }
-
-            .dropdown-item {
-                padding: 10px 10px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                border-bottom: 1px solid #ecf0f1;
-                border-right: 1px solid #ecf0f1;
-                color: #2c3e50;
-                font-weight: 500;
-                font-size: 13px;
-                background-color: white;
-                transition: background-color 0.1s;
-            }
+            .dropdown-menu { display: grid; grid-template-columns: 1fr 1fr; visibility: hidden; opacity: 0; transition: opacity 0.2s ease, visibility 0.2s ease; transition-delay: 0.6s; position: absolute; bottom: 100%; left: 0; width: 100%; background-color: white; box-shadow: 0px -8px 20px 0px rgba(0,0,0,0.2); z-index: 1000; border-radius: 8px; border: 1px solid #bdc3c7; margin-bottom: 5px; max-height: 250px; overflow-y: auto; }
+            .custom-dropdown:hover .dropdown-menu { visibility: visible; opacity: 1; transition-delay: 0s; }
+            .dropdown-item { padding: 10px 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #ecf0f1; border-right: 1px solid #ecf0f1; color: #2c3e50; font-weight: 500; font-size: 13px; background-color: white; transition: background-color 0.1s; }
             .dropdown-item:nth-child(even) { border-right: none; }
             .dropdown-item:hover { background-color: #f1f2f6; }
-            
             .mode-icon { display: inline-flex; align-items: center; justify-content: center; }
             .mode-icon svg { width: 20px; height: 20px; }
+
+            /* NEU: CSS für die Tag/Nacht Boxen und den Slider */
+            .temp-adjust-box {
+                background: #fcfcfc;
+                border: 2px solid #ecf0f1;
+                border-radius: 8px;
+                padding: 10px;
+                width: 130px;
+                position: relative;
+            }
+            .clickable-temp {
+                font-size: 22px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 5px;
+                transition: transform 0.1s;
+                user-select: none;
+            }
+            .clickable-temp:active {
+                transform: scale(0.95);
+            }
+            .slider-popup {
+                display: none;
+                position: absolute;
+                bottom: 110%; /* Öffnet sich über dem Button */
+                left: 50%;
+                transform: translateX(-50%);
+                background: white;
+                border: 2px solid #bdc3c7;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+                z-index: 1005;
+                width: 220px;
+            }
+            /* Hübscherer Slider */
+            input[type=range] {
+                width: 100%;
+                margin: 15px 0;
+            }
         </style>
         
         <div class="visu-container">
             $mainOverview
             
-            <div id="modal_buffer" class="modal-overlay">
-                <div class="modal-content">
+            <div id="modal_buffer" class="modal-overlay" onclick="closeAllSliders(event)">
+                <div class="modal-content" onclick="event.stopPropagation()">
                     <div class="close-btn" onclick="closeModal('modal_buffer')">&times;</div>
                     <div class="modal-body" style="overflow:hidden;">$popupBufferContent</div>
                 </div>
             </div>
             
-            <div id="modal_boiler" class="modal-overlay">
-                <div class="modal-content" style="max-width: 400px; max-height: 300px;">
+            <div id="modal_boiler" class="modal-overlay" onclick="closeAllSliders(event)">
+                <div class="modal-content" style="max-width: 400px; max-height: 300px;" onclick="event.stopPropagation()">
                     <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
                     <div class="modal-body" style="text-align:center; padding-top:40px;">
                         <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 10px 0;">Kessel Status</div>
@@ -577,6 +604,24 @@ class HeizungskachelHTML extends IPSModule
                         setText('detail_target_temp_' + c.id, fmt(c.target_temp));
                         setText('detail_flow_temp_' + c.id, fmt(c.temp));
                         
+                        // Tag/Nacht Update (Wenn Daten vorhanden und Slider nicht gerade angefasst wird)
+                        if(c.day_temp !== -1) {
+                            setText('detail_day_temp_' + c.id, fmt(c.day_temp));
+                            var sliderD = document.getElementById('input_day_' + c.id);
+                            if(sliderD && document.activeElement !== sliderD) {
+                                sliderD.value = c.day_temp;
+                                setText('slider_val_day_' + c.id, fmt(c.day_temp) + " °C");
+                            }
+                        }
+                        if(c.night_temp !== -1) {
+                            setText('detail_night_temp_' + c.id, fmt(c.night_temp));
+                            var sliderN = document.getElementById('input_night_' + c.id);
+                            if(sliderN && document.activeElement !== sliderN) {
+                                sliderN.value = c.night_temp;
+                                setText('slider_val_night_' + c.id, fmt(c.night_temp) + " °C");
+                            }
+                        }
+
                         var isPumpOn = (c.state == true || c.state == 1);
                         var pumpIcon = document.getElementById('pump_icon_' + c.id);
                         var detailState = document.getElementById('detail_state_' + c.id);
@@ -592,12 +637,9 @@ class HeizungskachelHTML extends IPSModule
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
-
                             setText('main_mode_text_' + c.id, "Betriebsart: " + modeName);
-
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
-                            
                             if(currentTextEl) currentTextEl.textContent = modeName;
                             if(currentIconEl) currentIconEl.innerHTML = modeIcon;
                         }
@@ -609,10 +651,34 @@ class HeizungskachelHTML extends IPSModule
                     });
                 }
             }
+
             function fmt(val) { return parseFloat(val).toFixed(1); }
             function setText(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
-            function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-            function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+            
+            function openModal(id) { 
+                closeAllSliders(); // Sliders zurücksetzen, falls noch einer offen ist
+                document.getElementById(id).style.display = 'flex'; 
+            }
+            function closeModal(id) { 
+                document.getElementById(id).style.display = 'none'; 
+                closeAllSliders();
+            }
+
+            // Hilfsfunktionen für die neuen Temperatur-Slider
+            function toggleSlider(id) {
+                var el = document.getElementById(id);
+                var isHidden = (el.style.display === 'none' || el.style.display === '');
+                closeAllSliders(); // Erst alle anderen zumachen
+                if(isHidden) {
+                    el.style.display = 'block';
+                }
+            }
+            function closeAllSliders(event) {
+                var allSliders = document.querySelectorAll('.slider-popup');
+                for(var i=0; i<allSliders.length; i++) {
+                    allSliders[i].style.display = 'none';
+                }
+            }
         </script>
 HTML;
         return $html;
