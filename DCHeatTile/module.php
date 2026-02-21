@@ -250,11 +250,10 @@ class HeizungskachelHTML extends IPSModule
                 $dropdownItemsHTML = '<div class="dropdown-item" style="color: #7f8c8d; grid-column: span 2; text-align: center;">Keine Variable verknüpft</div>';
             }
 
-            // Klick auf den Hintergrund schließt jetzt sicher das Modal
             $modalsHTML .= '
-            <div id="modal_circuit_'.$cIndex.'" class="modal-overlay" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">
+            <div id="modal_circuit_'.$cIndex.'" class="modal-overlay" onclick="closeModal(\'modal_circuit_'.$cIndex.'\', event)">
                 <div class="modal-content" style="max-width: 420px; max-height: 550px;" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
+                    <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\', event)">&times;</div>
                     <div class="modal-body" style="text-align:center; padding: 25px 15px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
                         
                         <div>
@@ -418,8 +417,23 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* ACHTUNG: Die Hitbox (Trefferfläche) für das X wurde stark vergrößert, damit es auf dem Handy klappt! */
-            .close-btn { position: absolute; top: 0px; right: 0px; padding: 10px 15px; font-size: 28px; font-weight: bold; color: #e74c3c; cursor: pointer; z-index: 200; }
+            /* MASSIVES UPGRADE DER HITBOX: Feste 50x50 Box, Inhalt zentriert, kann nicht verfehlt werden */
+            .close-btn { 
+                position: absolute; 
+                top: 0px; 
+                right: 0px; 
+                width: 50px; 
+                height: 50px; 
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 36px; 
+                line-height: 1;
+                font-weight: bold; 
+                color: #e74c3c; 
+                cursor: pointer; 
+                z-index: 200; 
+            }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
@@ -454,16 +468,16 @@ class HeizungskachelHTML extends IPSModule
         <div class="visu-container">
             $mainOverview
             
-            <div id="modal_buffer" class="modal-overlay" onclick="closeModal('modal_buffer')">
+            <div id="modal_buffer" class="modal-overlay" onclick="closeModal('modal_buffer', event)">
                 <div class="modal-content" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal('modal_buffer')">&times;</div>
+                    <div class="close-btn" onclick="closeModal('modal_buffer', event)">&times;</div>
                     <div class="modal-body" style="overflow:hidden;">$popupBufferContent</div>
                 </div>
             </div>
             
-            <div id="modal_boiler" class="modal-overlay" onclick="closeModal('modal_boiler')">
+            <div id="modal_boiler" class="modal-overlay" onclick="closeModal('modal_boiler', event)">
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;" onclick="contentClick(event)">
-                    <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
+                    <div class="close-btn" onclick="closeModal('modal_boiler', event)">&times;</div>
                     <div class="modal-body" style="text-align:center; padding-top:40px;">
                         <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 10px 0;">Kessel Status</div>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
@@ -483,7 +497,6 @@ class HeizungskachelHTML extends IPSModule
 
             setTimeout(function() { updateView(initialData); }, 50);
 
-            // NEUE LOGIK FÜR SICHERES KLICKEN AUF DEM SMARTPHONE
             function stopProp(e) {
                 if (!e) e = window.event;
                 if (e && e.stopPropagation) {
@@ -494,16 +507,17 @@ class HeizungskachelHTML extends IPSModule
             }
 
             function contentClick(e) {
-                stopProp(e); // Verhindert, dass der Klick an den dunklen Hintergrund weitergegeben wird
+                stopProp(e);
                 if(e && e.target && e.target.closest) {
-                    // Wenn nicht auf einen Slider oder Temperaturtext geklickt wurde, schließe offene Slider
                     if(!e.target.closest('.slider-popup') && !e.target.closest('.clickable-temp')) {
                         closeAllSliders();
                     }
                 }
             }
 
-            function closeModal(id) { 
+            // NEU: event Variable übergeben, damit das Stoppen der Weiterleitung klappt
+            function closeModal(id, e) { 
+                if (e) stopProp(e);
                 document.getElementById(id).style.display = 'none'; 
                 closeAllSliders();
             }
@@ -640,7 +654,7 @@ class HeizungskachelHTML extends IPSModule
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
-                            setText('main_mode_text_' + c.id, "Betriebsart: " + modeName);
+                            setText('main_mode_text_' + c.id, "Soll: " + modeName);
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
                             if(currentTextEl) currentTextEl.textContent = modeName;
@@ -649,7 +663,7 @@ class HeizungskachelHTML extends IPSModule
 
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
-                            setText('main_opmode_text_' + c.id, "HK-Status: " + opModeName);
+                            setText('main_opmode_text_' + c.id, "Modus: " + opModeName);
                         }
                     });
                 }
