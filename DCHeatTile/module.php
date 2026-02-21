@@ -266,7 +266,8 @@ class HeizungskachelHTML extends IPSModule
                         <div>
                             <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.2;">'.$name.'</div>
                             
-                            <div id="detail_state_'.$cIndex.'" style="font-size: 16px; font-weight: bold; margin-bottom: 15px; line-height: 1.2;">Status laden...</div>
+                            <div id="detail_state_'.$cIndex.'" style="font-size: 16px; font-weight: bold; margin-bottom: 2px; line-height: 1.2;">Status laden...</div>
+                            <div id="detail_opmode_text_'.$cIndex.'" style="font-size: 14px; font-weight: bold; color: #7f8c8d; margin-bottom: 15px; line-height: 1.2;">HK-Status: --</div>
                             
                             <div style="font-size: 36px; margin: 5px 0; color:#e67e22; font-weight: bold; line-height: 1;">
                                 <span id="detail_target_temp_'.$cIndex.'">--</span> °C
@@ -424,35 +425,38 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* DER ::after TRICK FÜR DAS KREUZ */
+            /* ABSOLUTE BRECHSTANGE: Die 55x55 Hitbox komplett getrennt vom optischen SVG */
             .close-btn { 
                 position: absolute; 
-                top: 15px; 
-                right: 15px; 
-                width: 24px; 
-                height: 24px; 
-                color: #e74c3c; 
+                top: 0px; 
+                right: 0px; 
+                width: 55px; 
+                height: 55px; 
                 cursor: pointer; 
                 z-index: 200; 
-                transition: transform 0.1s;
-            }
-            /* Die Hitbox wird unsichtbar in alle Richtungen um 15px vergrößert */
-            .close-btn::after {
-                content: '';
-                position: absolute;
-                top: -15px;
-                right: -15px;
-                bottom: -15px;
-                left: -15px;
+                margin: 0;
+                padding: 0;
+                display: block;
+                background-color: transparent; 
                 border-top-right-radius: 10px;
             }
-            .close-btn:active { 
-                transform: scale(0.85); 
-            }
             .close-btn svg { 
+                position: absolute;
+                top: 15px; 
+                right: 15px; 
+                width: 25px; 
+                height: 25px; 
+                color: #e74c3c;
                 display: block;
-                width: 100%; 
-                height: 100%; 
+                margin: 0;
+                padding: 0;
+                /* pointer-events: none sorgt dafür, dass das Icon keine Klicks stiehlt/verschiebt */
+                pointer-events: none; 
+                transition: transform 0.1s;
+                transform-origin: center;
+            }
+            .close-btn:active svg { 
+                transform: scale(0.85); 
             }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
@@ -670,7 +674,6 @@ class HeizungskachelHTML extends IPSModule
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
-                        // NEU: "Betriebsart" Text aktualisieren
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
@@ -681,10 +684,11 @@ class HeizungskachelHTML extends IPSModule
                             if(currentIconEl) currentIconEl.innerHTML = modeIcon;
                         }
 
-                        // NEU: "HK-Status" Text aktualisieren
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
                             setText('main_opmode_text_' + c.id, "HK-Status: " + opModeName);
+                            var detOpMode = document.getElementById('detail_opmode_text_' + c.id);
+                            if(detOpMode) detOpMode.textContent = "HK-Status: " + opModeName;
                         }
                     });
                 }
