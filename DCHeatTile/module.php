@@ -59,7 +59,7 @@ class HeizungskachelHTML extends IPSModule
             $this->RegisterPropertyInteger("C{$i}_TargetTemp", 0); 
             $this->RegisterPropertyInteger("C{$i}_Temp", 0);       
             $this->RegisterPropertyInteger("C{$i}_Mode", 0);
-            $this->RegisterPropertyInteger("C{$i}_OpMode", 0); // NEU: Ist-Status
+            $this->RegisterPropertyInteger("C{$i}_OpMode", 0); 
         }
 
         $this->SetVisualizationType(1);
@@ -86,13 +86,28 @@ class HeizungskachelHTML extends IPSModule
             $vars[] = "C{$i}_TargetTemp"; 
             $vars[] = "C{$i}_Temp";
             $vars[] = "C{$i}_Mode";
-            $vars[] = "C{$i}_OpMode"; // NEU
+            $vars[] = "C{$i}_OpMode"; 
         }
 
         foreach ($vars as $prop) {
             $id = $this->ReadPropertyInteger($prop);
             if ($id > 0 && IPS_VariableExists($id)) {
                 $this->RegisterMessage($id, VM_UPDATE);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // NEU: Diese Funktion empfängt Klicks aus der Kachel und schaltet Symcon!
+    // -------------------------------------------------------------------------
+    public function RequestAction($Ident, $Value)
+    {
+        // Wir prüfen, ob der ankommende Ident unser Dropdown ist (z.B. "C1_Mode")
+        if (preg_match('/^C[1-6]_Mode$/', $Ident)) {
+            $varId = $this->ReadPropertyInteger($Ident);
+            if ($varId > 0 && IPS_VariableExists($varId)) {
+                // Den empfangenen Wert an die reale Variable in Symcon senden
+                RequestAction($varId, $Value);
             }
         }
     }
@@ -129,14 +144,14 @@ class HeizungskachelHTML extends IPSModule
             $idState = $this->ReadPropertyInteger("C{$i}_State");
             if($idState > 0 && IPS_VariableExists($idState)) {
                 $idMode = $this->ReadPropertyInteger("C{$i}_Mode");
-                $idOpMode = $this->ReadPropertyInteger("C{$i}_OpMode"); // NEU
+                $idOpMode = $this->ReadPropertyInteger("C{$i}_OpMode");
                 $circuits[] = [
                     'id' => $i,
                     'state' => GetValue($idState),
                     'target_temp' => $getVal("C{$i}_TargetTemp"),
                     'temp' => $getVal("C{$i}_Temp"),              
                     'mode' => ($idMode > 0 && IPS_VariableExists($idMode)) ? GetValue($idMode) : -1,
-                    'op_mode' => ($idOpMode > 0 && IPS_VariableExists($idOpMode)) ? GetValue($idOpMode) : -1 // NEU
+                    'op_mode' => ($idOpMode > 0 && IPS_VariableExists($idOpMode)) ? GetValue($idOpMode) : -1
                 ];
             }
         }
@@ -196,7 +211,7 @@ class HeizungskachelHTML extends IPSModule
                 
                 <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsmodus: --</text>
                 
-                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK Status: --</text>
+                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK-Status: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
                     <circle cx="0" cy="0" r="18" stroke="white" stroke-width="2" fill="none"/>
@@ -221,8 +236,10 @@ class HeizungskachelHTML extends IPSModule
             if ($modeVarId > 0) {
                 foreach($this->hkModes as $val => $label) {
                     $icon = $this->hkIcons[$val];
+                    // WICHTIGE ÄNDERUNG HIER: Wir senden nun den Ident (z.B. 'C1_Mode') statt der Variabel-ID,
+                    // damit die RequestAction in PHP das sauber auffangen kann!
                     $dropdownItemsHTML .= '
-                    <div class="dropdown-item" onclick="requestAction('.$modeVarId.', '.$val.')">
+                    <div class="dropdown-item" onclick="requestAction(\'C'.$cIndex.'_Mode\', '.$val.')">
                         <span class="mode-icon">'.$icon.'</span> '.$label.'
                     </div>';
                 }
@@ -335,7 +352,7 @@ class HeizungskachelHTML extends IPSModule
 
         $modeMapJSON = json_encode($this->hkModes);
         $iconMapJSON = json_encode($this->hkIcons);
-        $opModeMapJSON = json_encode($this->opModes); // NEU
+        $opModeMapJSON = json_encode($this->opModes); 
 
         $html = <<<HTML
         <style>
@@ -347,7 +364,6 @@ class HeizungskachelHTML extends IPSModule
                 font-family: sans-serif; 
                 overflow: hidden; 
                 background: #ecf0f1; 
-                /* Verhindert automatische Text-Skalierung durch das Betriebssystem */
                 -webkit-text-size-adjust: 100%;
                 text-size-adjust: 100%;
             }
@@ -473,7 +489,7 @@ class HeizungskachelHTML extends IPSModule
             var initialData = $initialData;
             var modeMap = $modeMapJSON; 
             var iconMap = $iconMapJSON; 
-            var opModeMap = $opModeMapJSON; // NEU
+            var opModeMap = $opModeMapJSON; 
 
             setTimeout(function() { updateView(initialData); }, 50);
 
@@ -568,12 +584,11 @@ class HeizungskachelHTML extends IPSModule
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
-                        // Gewählter Modus (Soll)
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
 
-                            setText('main_mode_text_' + c.id, "Betriebsmodus: " + modeName);
+                            setText('main_mode_text_' + c.id, "Betriebsart: " + modeName);
 
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
@@ -582,10 +597,9 @@ class HeizungskachelHTML extends IPSModule
                             if(currentIconEl) currentIconEl.innerHTML = modeIcon;
                         }
 
-                        // NEU: Aktueller Status (Ist)
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
-                            setText('main_opmode_text_' + c.id, "HK Status: " + opModeName);
+                            setText('main_opmode_text_' + c.id, "HK-Status: " + opModeName);
                         }
                     });
                 }
