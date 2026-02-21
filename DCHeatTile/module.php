@@ -14,7 +14,7 @@ class HeizungskachelHTML extends IPSModule
         5 => "Kühlen"
     ];
 
-    // Die neuen 11 tatsächlichen Betriebszustände (Anzeige Übersicht)
+    // Die tatsächlichen Betriebszustände (Anzeige Übersicht)
     private $opModes = [
         0 => "Aus",
         1 => "Heizen",
@@ -97,16 +97,11 @@ class HeizungskachelHTML extends IPSModule
         }
     }
 
-    // -------------------------------------------------------------------------
-    // NEU: Diese Funktion empfängt Klicks aus der Kachel und schaltet Symcon!
-    // -------------------------------------------------------------------------
     public function RequestAction($Ident, $Value)
     {
-        // Wir prüfen, ob der ankommende Ident unser Dropdown ist (z.B. "C1_Mode")
         if (preg_match('/^C[1-6]_Mode$/', $Ident)) {
             $varId = $this->ReadPropertyInteger($Ident);
             if ($varId > 0 && IPS_VariableExists($varId)) {
-                // Den empfangenen Wert an die reale Variable in Symcon senden
                 RequestAction($varId, $Value);
             }
         }
@@ -208,9 +203,7 @@ class HeizungskachelHTML extends IPSModule
                 <line x1="-40" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
 
                 <text x="10" y="16" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
-                
-                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsmodus: --</text>
-                
+                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsart: --</text>
                 <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK-Status: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
@@ -236,8 +229,6 @@ class HeizungskachelHTML extends IPSModule
             if ($modeVarId > 0) {
                 foreach($this->hkModes as $val => $label) {
                     $icon = $this->hkIcons[$val];
-                    // WICHTIGE ÄNDERUNG HIER: Wir senden nun den Ident (z.B. 'C1_Mode') statt der Variabel-ID,
-                    // damit die RequestAction in PHP das sauber auffangen kann!
                     $dropdownItemsHTML .= '
                     <div class="dropdown-item" onclick="requestAction(\'C'.$cIndex.'_Mode\', '.$val.')">
                         <span class="mode-icon">'.$icon.'</span> '.$label.'
@@ -251,21 +242,21 @@ class HeizungskachelHTML extends IPSModule
             <div id="modal_circuit_'.$cIndex.'" class="modal-overlay">
                 <div class="modal-content" style="max-width: 400px; max-height: 480px;">
                     <div class="close-btn" onclick="closeModal(\'modal_circuit_'.$cIndex.'\')">&times;</div>
-                    <div class="modal-body" style="text-align:center; padding-top:25px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
+                    <div class="modal-body" style="text-align:center; padding-top:20px; display: flex; flex-direction: column; justify-content: space-between; overflow: visible;">
                         
                         <div>
-                            <h2 style="color:#2c3e50; margin-bottom: 5px;">'.$name.'</h2>
+                            <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.2;">'.$name.'</div>
                             
-                            <div id="detail_state_'.$cIndex.'" style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">Status laden...</div>
+                            <div id="detail_state_'.$cIndex.'" style="font-size: 16px; font-weight: bold; margin-bottom: 15px; line-height: 1.2;">Status laden...</div>
                             
-                            <div style="font-size: 36px; margin: 10px 0; color:#e67e22; font-weight: bold;">
+                            <div style="font-size: 36px; margin: 5px 0; color:#e67e22; font-weight: bold; line-height: 1;">
                                 <span id="detail_target_temp_'.$cIndex.'">--</span> °C
-                                <div style="font-size: 14px; font-weight: normal; color: #7f8c8d; margin-top: -5px;">Raum-Soll</div>
+                                <div style="font-size: 14px; font-weight: normal; color: #7f8c8d; margin-top: 2px;">Raum-Soll</div>
                             </div>
 
-                            <div style="font-size: 24px; margin: 15px 0; color:#3498db; font-weight: bold;">
+                            <div style="font-size: 24px; margin: 15px 0; color:#3498db; font-weight: bold; line-height: 1;">
                                 <span id="detail_flow_temp_'.$cIndex.'">--</span> °C
-                                <div style="font-size: 12px; font-weight: normal; color: #7f8c8d; margin-top: -2px;">Vorlauf</div>
+                                <div style="font-size: 12px; font-weight: normal; color: #7f8c8d; margin-top: 2px;">Vorlauf</div>
                             </div>
                         </div>
                         
@@ -356,7 +347,27 @@ class HeizungskachelHTML extends IPSModule
 
         $html = <<<HTML
         <style>
+            /* WICHTIG: Body und HTML von Standard-Browser Rändern befreien! */
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background-color: #ecf0f1; /* Erzwingt helle Grundfarbe auf allen Geräten */
+                -webkit-text-size-adjust: none !important;
+                text-size-adjust: none !important;
+            }
+
+            /* Container und alle Kinder vor Font-Boosting schützen */
+            * {
+                box-sizing: border-box;
+                -webkit-text-size-adjust: none !important;
+                text-size-adjust: none !important;
+            }
+
             :root { --fill-val: 0; } 
+            
             .visu-container { 
                 position: relative; 
                 width: 100%; 
@@ -364,14 +375,8 @@ class HeizungskachelHTML extends IPSModule
                 font-family: sans-serif; 
                 overflow: hidden; 
                 background: #ecf0f1; 
-                -webkit-text-size-adjust: 100%;
-                text-size-adjust: 100%;
             }
-            .visu-container * {
-                -webkit-text-size-adjust: 100%;
-                text-size-adjust: 100%;
-                box-sizing: border-box;
-            }
+            
             .clickable { cursor: pointer; transition: opacity 0.2s; }
             .clickable:hover { opacity: 0.8; filter: brightness(1.1); }
             
@@ -475,7 +480,7 @@ class HeizungskachelHTML extends IPSModule
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;">
                     <div class="close-btn" onclick="closeModal('modal_boiler')">&times;</div>
                     <div class="modal-body" style="text-align:center; padding-top:40px;">
-                        <h2>Kessel Status</h2>
+                        <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 10px 0;">Kessel Status</div>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
                         <div id="detail_boil_state" style="font-size: 20px; font-weight:bold; color:#7f8c8d;">AUS</div>
                     </div>
