@@ -215,8 +215,8 @@ class HeizungskachelHTML extends IPSModule
                 <line x1="-40" y1="'.($blockHeight/2 + 20).'" x2="0" y2="'.($blockHeight/2 + 20).'" stroke="#3498db" stroke-width="4" />
 
                 <text x="10" y="16" style="fill: #e67e22; font-family: Arial; font-weight: bold; font-size: 14px;">'.$name.'</text>
-                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Soll: --</text>
-                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Modus: --</text>
+                <text id="main_mode_text_'.$cIndex.'" x="10" y="32" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">Betriebsart: --</text>
+                <text id="main_opmode_text_'.$cIndex.'" x="10" y="44" style="fill: #e67e22; font-family: Arial; font-size: 10px; opacity: 0.8;">HK-Status: --</text>
                 
                 <g transform="translate(150, '.($blockHeight/2).')">
                     <circle cx="0" cy="0" r="18" stroke="white" stroke-width="2" fill="none"/>
@@ -234,7 +234,6 @@ class HeizungskachelHTML extends IPSModule
         // -----------------------------------------------------------
         $modalsHTML = "";
         
-        // Das Vektor-X
         $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"></line><line x1="4" y1="20" x2="20" y2="4"></line></svg>';
 
         foreach($configuredCircuits as $cIndex) {
@@ -313,7 +312,7 @@ class HeizungskachelHTML extends IPSModule
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 5px;">Betriebsmodus</div>
+                            <div style="font-size: 14px; font-weight: bold; color: #34495e; margin-bottom: 5px;">Betriebsart</div>
                             <div class="custom-dropdown">
                                 <div class="dropdown-menu">
                                     '.$dropdownItemsHTML.'
@@ -425,29 +424,35 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* NEUER ANSATZ FÜR DAS KREUZ: Hitbox und Icon komplett entkoppelt! */
+            /* DER ::after TRICK FÜR DAS KREUZ */
             .close-btn { 
                 position: absolute; 
-                top: 0; 
-                right: 0; 
-                width: 55px; 
-                height: 55px; 
-                cursor: pointer; 
-                z-index: 200; 
-                border-top-right-radius: 10px;
-                border-bottom-left-radius: 10px;
-            }
-            .close-btn svg { 
-                position: absolute;
-                top: 12px; /* Zwingt das Kreuz exakt 12px von oben */
-                right: 12px; /* Zwingt das Kreuz exakt 12px von rechts */
+                top: 15px; 
+                right: 15px; 
                 width: 24px; 
                 height: 24px; 
-                color: #e74c3c;
+                color: #e74c3c; 
+                cursor: pointer; 
+                z-index: 200; 
                 transition: transform 0.1s;
             }
-            .close-btn:active svg { 
-                transform: scale(0.85); /* Animation nur auf das Kreuz, nicht auf die Hitbox */
+            /* Die Hitbox wird unsichtbar in alle Richtungen um 15px vergrößert */
+            .close-btn::after {
+                content: '';
+                position: absolute;
+                top: -15px;
+                right: -15px;
+                bottom: -15px;
+                left: -15px;
+                border-top-right-radius: 10px;
+            }
+            .close-btn:active { 
+                transform: scale(0.85); 
+            }
+            .close-btn svg { 
+                display: block;
+                width: 100%; 
+                height: 100%; 
             }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
@@ -665,19 +670,21 @@ class HeizungskachelHTML extends IPSModule
                             if(detailState) { detailState.innerText = "Pumpe AUS"; detailState.style.color = "#7f8c8d"; }
                         }
 
+                        // NEU: "Betriebsart" Text aktualisieren
                         if(c.mode !== -1) {
                             var modeName = modeMap[c.mode] || "Unbekannt";
                             var modeIcon = iconMap[c.mode] || "";
-                            setText('main_mode_text_' + c.id, "Soll: " + modeName);
+                            setText('main_mode_text_' + c.id, "Betriebsart: " + modeName);
                             var currentTextEl = document.getElementById('current_text_' + c.id);
                             var currentIconEl = document.getElementById('current_icon_' + c.id);
                             if(currentTextEl) currentTextEl.textContent = modeName;
                             if(currentIconEl) currentIconEl.innerHTML = modeIcon;
                         }
 
+                        // NEU: "HK-Status" Text aktualisieren
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
-                            setText('main_opmode_text_' + c.id, "Modus: " + opModeName);
+                            setText('main_opmode_text_' + c.id, "HK-Status: " + opModeName);
                         }
                     });
                 }
