@@ -234,8 +234,8 @@ class HeizungskachelHTML extends IPSModule
         // -----------------------------------------------------------
         $modalsHTML = "";
         
-        // DAS NEUE Vektor-X (SVG), das überall gleich aussieht
-        $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        // Das Vektor-X (mit display block und margin 0 für exakte Ausrichtung)
+        $svgCloseIcon = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0; padding:0;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
 
         foreach($configuredCircuits as $cIndex) {
             $name = $this->ReadPropertyString("C{$cIndex}_Name");
@@ -425,25 +425,26 @@ class HeizungskachelHTML extends IPSModule
             .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
             .modal-content { background: white; width: 90%; height: 95%; border-radius: 10px; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
             
-            /* NEUE SVG BUTTON CSS: Absolut sauber zentriert und antippbar */
+            /* NEU: Button klebt exakt in der Ecke top:0, right:0 ohne jegliches Padding */
             .close-btn { 
                 position: absolute; 
-                top: 8px; 
-                right: 8px; 
-                width: 44px; 
-                height: 44px; 
+                top: 0px; 
+                right: 0px; 
+                width: 50px; 
+                height: 50px; 
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: #e74c3c; 
                 cursor: pointer; 
                 z-index: 200; 
-                border-radius: 50%;
+                border-top-right-radius: 10px;
+                border-bottom-left-radius: 10px;
                 background-color: transparent;
                 transition: background-color 0.2s;
             }
             .close-btn:active { background-color: #f1f2f6; }
-            .close-btn svg { width: 28px; height: 28px; }
+            .close-btn svg { width: 24px; height: 24px; }
             
             .modal-body { flex: 1; padding: 5px; overflow: visible; }
             
@@ -488,7 +489,7 @@ class HeizungskachelHTML extends IPSModule
             <div id="modal_boiler" class="modal-overlay" onclick="closeModal('modal_boiler', event)">
                 <div class="modal-content" style="max-width: 400px; max-height: 300px;" onclick="contentClick(event)">
                     <div class="close-btn" onclick="closeModal('modal_boiler', event)">$svgCloseIcon</div>
-                    <div class="modal-body" style="text-align:center; padding-top:40px;">
+                    <div class="modal-body" style="text-align:center; padding-top:35px;">
                         <div style="color:#2c3e50; font-size: 24px; font-weight: bold; margin: 0 0 10px 0;">Kessel Status</div>
                         <div style="font-size: 40px; margin: 20px 0;" id="detail_boil_temp">-- °C</div>
                         <div id="detail_boil_state" style="font-size: 20px; font-weight:bold; color:#7f8c8d;">AUS</div>
