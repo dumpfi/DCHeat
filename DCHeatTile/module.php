@@ -50,7 +50,7 @@ class HeizungskachelHTML extends IPSModule
         $this->RegisterPropertyInteger("SourcePuffer1", 0);    
         $this->RegisterPropertyInteger("Boiler_State", 0);     
         $this->RegisterPropertyInteger("Boiler_Temp", 0);      
-        $this->RegisterPropertyInteger("BufferPump_State", 0); // NEU: Puffer Pumpe
+        $this->RegisterPropertyInteger("BufferPump_State", 0); 
 
         for($i=1; $i<=6; $i++) {
             $this->RegisterPropertyString("C{$i}_Name", "HK $i");
@@ -79,7 +79,7 @@ class HeizungskachelHTML extends IPSModule
         $vars = [
             "OutsideTemp", "AvgOutsideTemp", 
             "SourceFill", "SourceBoiler", "SourcePuffer3", "SourcePuffer2", "SourcePuffer1",
-            "Boiler_State", "Boiler_Temp", "BufferPump_State" // Puffer Pumpe hinzugefügt
+            "Boiler_State", "Boiler_Temp", "BufferPump_State"
         ];
 
         for($i=1; $i<=6; $i++) {
@@ -142,7 +142,7 @@ class HeizungskachelHTML extends IPSModule
             't_p1'      => $getVal("SourcePuffer1"),
             'ov_boil_state' => $getVal("Boiler_State"), 
             'ov_boil_temp'  => $getVal("Boiler_Temp"),
-            'buf_pump_state' => $getVal("BufferPump_State") // NEU
+            'buf_pump_state' => $getVal("BufferPump_State")
         ];
 
         $circuits = [];
@@ -646,9 +646,9 @@ class HeizungskachelHTML extends IPSModule
                     if(detState) { detState.textContent = sText; detState.style.color = sColor; }
                 }
 
-                // NEU: Puffer Pumpe Update
+                // Logik für Puffer Pumpe (>= 1 ist ein)
                 if(data.buf_pump_state !== undefined) {
-                    var isBufPumpOn = (data.buf_pump_state == true || data.buf_pump_state == 1);
+                    var isBufPumpOn = (parseFloat(data.buf_pump_state) > 0);
                     var bufPumpIcon = document.getElementById('main_buf_pump_icon');
                     if (bufPumpIcon) {
                         if (isBufPumpOn) {
@@ -684,7 +684,7 @@ class HeizungskachelHTML extends IPSModule
                             }
                         }
 
-                        var isPumpOn = (c.state == true || c.state == 1);
+                        var isPumpOn = (c.state === true || parseFloat(c.state) > 0);
                         var pumpIcon = document.getElementById('pump_icon_' + c.id);
                         var detailState = document.getElementById('detail_state_' + c.id);
                         
@@ -709,8 +709,6 @@ class HeizungskachelHTML extends IPSModule
                         if(c.op_mode !== -1) {
                             var opModeName = opModeMap[c.op_mode] || "Unbekannt";
                             setText('main_opmode_text_' + c.id, "HK-Status: " + opModeName);
-                            var detOpMode = document.getElementById('detail_opmode_text_' + c.id);
-                            if(detOpMode) detOpMode.textContent = "HK-Status: " + opModeName;
                         }
                     });
                 }
